@@ -1,0 +1,26 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.o
+*.obj
+
+# Libraries and Executables
+*.lib
+*.a
+*.dll
+*.so
+*.dylib
+*.exe
+*.out
+
+# VS Code & IDE files
+.vscode/
+.vs/
+CMakeSettings.json
+
+# Build and Output directories
+/build/
+/out/
+
+vcpkg/
