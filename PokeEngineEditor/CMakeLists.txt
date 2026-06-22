@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${SRC_DIR}")
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Poke-Engine-Core)
+target_link_libraries(${PROJECT_NAME} PUBLIC PokeEngineCore)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
     file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${OUTPUT_PATH}")

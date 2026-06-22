@@ -12,7 +12,7 @@ else()
     add_compile_options(-fno-rtti -fno-exceptions)
 endif()
 
-add_subdirectory("PokeEngineCore")
+add_subdirectory("Poke")
 add_subdirectory("PokeEngineEditor")
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PokeEngineEditor)
