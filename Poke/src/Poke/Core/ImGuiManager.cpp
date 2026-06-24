@@ -15,12 +15,12 @@ void ImGuiManager::Init()
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     ImGui_ImplSDL3_InitForOpenGL(Application::GetInstance().GetInstance().GetWindow()->GetSDLWindow(),
                                  Application::GetInstance().GetInstance().GetWindow()->GetSDLContext());
     ImGui_ImplOpenGL3_Init();
+
+    CustomImGui();
 }
 
 void ImGuiManager::BeginFrame()
@@ -34,4 +34,11 @@ void ImGuiManager::EndFrame()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void Poke::ImGuiManager::CustomImGui()
+{
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.IniFilename = "PokeEngineEditor/assets/imgui.ini";
 }

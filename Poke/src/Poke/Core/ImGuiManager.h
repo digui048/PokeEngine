@@ -9,15 +9,18 @@ namespace Poke
 {
     class ImGuiManager
     {
-        public:
-            ImGuiManager() = default;
-            ~ImGuiManager();
+    public:
+        ImGuiManager() = default;
+        ~ImGuiManager();
 
-            void Init();
-            void GetEvents();
+        void Init();
+        void GetEvents();
 
-            void BeginFrame();
-            void EndFrame();
+        void BeginFrame();
+        void EndFrame();
+
+    private:
+        void CustomImGui();
     };
 }
 
