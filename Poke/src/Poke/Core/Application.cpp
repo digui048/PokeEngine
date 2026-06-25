@@ -35,6 +35,7 @@ Application *Application::s_Instance = nullptr;
 
 Application::Application()
 {
+    Log::Init();
     m_window = std::make_unique<Window>("PokeEngine", WINDOW_PREV_WIDTH, WINDOW_PREV_HEIGHT);
     m_imguiManager = std::make_unique<ImGuiManager>();
     s_Instance = this;
@@ -50,10 +51,6 @@ Application &Application::GetInstance()
 void Application::Run()
 {
     OnInit();
-
-    Log::Init();
-
-    m_imguiManager->Init();
 
     // Init all OpenGL function pointers at runtime (not linked at compile time)
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
@@ -185,7 +182,7 @@ void Application::Run()
 
 void Poke::Application::OnInit()
 {
-    
+    m_imguiManager->Init();
 }
 
 void Poke::Application::OnUpdate(float dt)

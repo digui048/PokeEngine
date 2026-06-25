@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if (MSVC)
     add_compile_options(/GR- /EHs-)
 else()
-    add_compile_options(-fno-rtti -fno-exceptions)
+    add_compile_options(-fno-rtti)
 endif()
 
 add_subdirectory("Poke")

@@ -14,16 +14,16 @@
 #define POKE_DEBUGBREAK() ((void)0)
 #endif
 
-#define POKE_ASSERT(condition, msg)                            \
-    do                                                         \
-    {                                                          \
-        if (!(condition))                                      \
-        {                                                      \
-            POKE_CORE_CRITICAL("ASSERT: {0}", msg);            \
-            POKE_CORE_CRITICAL("{0}:{1}", __FILE__, __LINE__); \
-            POKE_DEBUGBREAK();                                 \
-            std::abort();                                      \
-        }                                                      \
+#define POKE_ASSERT(condition, ...)                                                 \
+    do                                                                              \
+    {                                                                               \
+        if (!(condition))                                                           \
+        {                                                                           \
+            POKE_CORE_CRITICAL(__VA_ARGS__);                                        \
+            POKE_CORE_CRITICAL("Assertion failed at {0}:{1}", __FILE__, __LINE__);  \
+            POKE_DEBUGBREAK();                                                      \
+            std::abort();                                                           \
+        }                                                                           \
     } while (0)
 
 #endif
