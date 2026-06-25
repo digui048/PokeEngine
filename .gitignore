@@ -22,5 +22,6 @@ CMakeSettings.json
 # Build and Output directories
 /build/
 /out/
+/logs/
 
 vcpkg/

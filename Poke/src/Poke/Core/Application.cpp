@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "Window.h"
 #include "ImGuiManager.h"
+#include "Log.h"
 
 // OpenGL
 #include <glad/glad.h>
@@ -49,6 +50,8 @@ Application &Application::GetInstance()
 void Application::Run()
 {
     OnInit();
+
+    Log::Init();
 
     m_imguiManager->Init();
 
@@ -182,6 +185,7 @@ void Application::Run()
 
 void Poke::Application::OnInit()
 {
+    
 }
 
 void Poke::Application::OnUpdate(float dt)
