@@ -18,12 +18,15 @@ namespace Poke
 
         void Run();
 
-        Window* GetWindow() const { return m_window.get(); }
+        Window *GetWindow() const { return m_window.get(); }
 
     protected:
         virtual void OnInit();
         virtual void OnUpdate(float dt);
         virtual void OnShutdown();
+
+    private:
+        void PollEvents();
 
     private:
         static Application *s_Instance;
