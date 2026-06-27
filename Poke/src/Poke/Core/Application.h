@@ -21,9 +21,9 @@ namespace Poke
         Window *GetWindow() const { return m_window.get(); }
 
     protected:
-        virtual void OnInit();
-        virtual void OnUpdate(float dt);
-        virtual void OnShutdown();
+        virtual void OnInit() {}
+        virtual void OnUpdate(float dt) {}
+        virtual void OnShutdown() {}
 
     private:
         void PollEvents();

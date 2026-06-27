@@ -4,6 +4,8 @@
 #include "Log.h"
 #include "Time.h"
 
+#include "Poke/Render/Renderer.h"
+
 #include <glad/glad.h>
 
 using namespace Poke;
@@ -38,8 +40,7 @@ void Application::Run()
 
     OnInit();
 
-    // Init all OpenGL function pointers at runtime (not linked at compile time)
-    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+    Renderer::Init();
 
     while (m_Running)
     {
@@ -49,8 +50,7 @@ void Application::Run()
 
         OnUpdate(Time::DeltaTime());
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        Renderer::Clear();
 
         m_imguiManager->BeginFrame();
 
@@ -69,7 +69,7 @@ void Application::Run()
     POKE_CORE_INFO("Engine shutdown");
 }
 
-void Poke::Application::PollEvents()
+void Application::PollEvents()
 {
     SDL_Event sdlEvent;
 
@@ -93,16 +93,4 @@ void Poke::Application::PollEvents()
             break;
         }
     }
-}
-
-void Poke::Application::OnInit()
-{
-}
-
-void Poke::Application::OnUpdate(float dt)
-{
-}
-
-void Poke::Application::OnShutdown()
-{
 }
