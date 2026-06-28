@@ -18,8 +18,12 @@ VertexArray::~VertexArray()
 
 void VertexArray::AddBuffer(VertexBuffer *vbo, IndexBuffer *ebo)
 {
+    m_vbo = vbo;
+    m_ebo = ebo;
+
     glBindVertexArray(m_rendererID);
     vbo->Bind();
+    ebo->Bind();
     const auto &elements = vbo->GetLayout().GetElements();
     size_t offset = 0;
     for (size_t i = 0; i < elements.size(); ++i)

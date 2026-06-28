@@ -17,10 +17,12 @@ namespace Poke
         void Bind() const;
         void Unbind() const;
 
+        IndexBuffer* GetIndexBuffer() const { return m_ebo; }
+
     private:
         unsigned int m_rendererID;
-        VertexBuffer *m_vbo;
-        IndexBuffer *m_ebo;
+        VertexBuffer *m_vbo = nullptr;
+        IndexBuffer *m_ebo = nullptr;
     };
 }
 

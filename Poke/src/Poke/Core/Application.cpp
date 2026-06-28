@@ -55,18 +55,18 @@ void Application::Run()
     unsigned int indices[] = {0, 1, 2};
 
     VertexArray vao;
-    VertexBuffer *vbo = new VertexBuffer((void *)vertices, (unsigned int)sizeof(vertices));
+    auto vbo = std::make_shared<VertexBuffer>((void *)vertices, (unsigned int)sizeof(vertices));
     VertexBufferLayout layout;
     layout.Push<float>(3);
     vbo->SetLayout(layout);
-    IndexBuffer *ebo = new IndexBuffer(indices, 3);
+    auto ebo = std::make_shared<IndexBuffer>(indices, 3);
 
     vao.Bind();
     vbo->Bind();
     ebo->Bind();
-    vao.AddBuffer(vbo, ebo);
+    vao.AddBuffer(vbo.get(), ebo.get());
 
-    Shader *m_shader = new Shader("PokeEngineEditor/assets/shaders/basic.shader");
+    auto m_shader = std::make_shared<Shader>("PokeEngineEditor/assets/shaders/basic.shader");
     m_shader->Bind();
 
     vao.Unbind();
@@ -85,10 +85,8 @@ void Application::Run()
         Renderer::Clear();
 
         m_shader->Bind();
-        vao.Bind();
-        ebo->Bind();
 
-        glDrawElements(GL_TRIANGLES, ebo->GetCount(), GL_UNSIGNED_INT, nullptr);
+        Renderer::DrawIndexed(vao);
 
         m_imguiManager->BeginFrame();
 
@@ -98,10 +96,6 @@ void Application::Run()
 
         m_window->SwapWindow();
     }
-
-    delete m_shader;
-    delete vbo;
-    delete ebo;
 
     OnShutdown();
 

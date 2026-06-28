@@ -87,7 +87,7 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string &source)
         POKE_CORE_ERROR("GLSL Error Message: {0}", message.data());
 
         glDeleteShader(id);
-        POKE_ASSERT(false, "Shader compilation failed!");
+        POKE_ASSERT(false, "Shader compilation failed");
         return 0;
     }
 
@@ -96,8 +96,8 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string &source)
 
 unsigned int Shader::CreateShader(const std::string &vertexShader, const std::string &fragmentShader)
 {
-    POKE_ASSERT(!vertexShader.empty(), "Vertex shader source code is empty!");
-    POKE_ASSERT(!fragmentShader.empty(), "Fragment shader source code is empty!");
+    POKE_ASSERT(!vertexShader.empty(), "Vertex shader source code is empty");
+    POKE_ASSERT(!fragmentShader.empty(), "Fragment shader source code is empty");
 
     unsigned int program = glCreateProgram();
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
