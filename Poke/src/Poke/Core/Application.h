@@ -8,6 +8,11 @@ namespace Poke
     class Window;
     class ImGuiManager;
 
+    class VertexArray;
+    class VertexBuffer;
+    class IndexBuffer;
+    class Shader;
+
     class Application
     {
     public:
@@ -33,6 +38,12 @@ namespace Poke
         std::unique_ptr<Window> m_window;
         std::unique_ptr<ImGuiManager> m_imguiManager;
         bool m_Running = true;
+
+        std::unique_ptr<VertexArray> m_vao;
+        std::shared_ptr<VertexBuffer> m_vbo;
+        std::shared_ptr<IndexBuffer> m_ebo;
+
+        std::shared_ptr<Shader> m_shader;
     };
 }
 

@@ -15,7 +15,7 @@ namespace Poke
         void Unbind() const;
 
         void SetLayout(const VertexBufferLayout& layout) { m_layout = layout; }
-        VertexBufferLayout GetLayout() const { return m_layout; }
+        const VertexBufferLayout& GetLayout() const { return m_layout; }
 
     private:
         unsigned int m_rendererID;

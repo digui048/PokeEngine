@@ -45,8 +45,6 @@ void Application::Run()
 
     OnInit();
 
-    Renderer::Init();
-
     float vertices[] = {
         -0.5f, -0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
@@ -54,25 +52,30 @@ void Application::Run()
 
     unsigned int indices[] = {0, 1, 2};
 
-    VertexArray vao;
-    auto vbo = std::make_shared<VertexBuffer>((void *)vertices, (unsigned int)sizeof(vertices));
+    m_vao = std::make_unique<VertexArray>();
+
+    m_vbo = std::make_shared<VertexBuffer>((void *)vertices, (unsigned int)sizeof(vertices));
+
     VertexBufferLayout layout;
     layout.Push<float>(3);
-    vbo->SetLayout(layout);
-    auto ebo = std::make_shared<IndexBuffer>(indices, 3);
+    m_vbo->SetLayout(layout);
+    m_ebo = std::make_shared<IndexBuffer>(indices, 3);
 
-    vao.Bind();
-    vbo->Bind();
-    ebo->Bind();
-    vao.AddBuffer(vbo.get(), ebo.get());
+    m_vao->Bind();
+    m_vbo->Bind();
+    m_ebo->Bind();
+    m_vao->AddBuffer(m_vbo.get(), m_ebo.get());
 
-    auto m_shader = std::make_shared<Shader>("PokeEngineEditor/assets/shaders/basic.shader");
+    m_shader = std::make_shared<Shader>("PokeEngineEditor/assets/shaders/basic.shader");
+
     m_shader->Bind();
 
-    vao.Unbind();
-    vbo->Unbind();
-    ebo->Unbind();
+    m_vao->Unbind();
+    m_vbo->Unbind();
+    m_ebo->Unbind();
     m_shader->Unbind();
+
+    Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
     while (m_Running)
     {
@@ -83,10 +86,8 @@ void Application::Run()
         OnUpdate(Time::DeltaTime());
 
         Renderer::Clear();
-
-        m_shader->Bind();
-
-        Renderer::DrawIndexed(vao);
+        
+        Renderer::DrawIndexed(*m_vao, *m_shader);
 
         m_imguiManager->BeginFrame();
 

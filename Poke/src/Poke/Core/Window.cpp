@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Assert.h"
+#include "Poke/Render/Renderer.h"
 
 #include <SDL3_image/SDL_image.h>
 
@@ -10,17 +11,20 @@ Window::Window(std::string name, int width, int height)
     POKE_ASSERT(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0, "Failed to initialise SDL: {}", SDL_GetError());
     POKE_CORE_INFO("SDL initialized successfully");
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
     m_window = SDL_CreateWindow(name.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     POKE_ASSERT(m_window != nullptr, "SDL_CreateWindow failed: {}", SDL_GetError());
     POKE_CORE_INFO("Window created: {}x{}", width, height);
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     m_GLContext = SDL_GL_CreateContext(m_window);
     POKE_ASSERT(m_GLContext != nullptr, "SDL_GL_CreateContext failed: {}", SDL_GetError());
     POKE_CORE_INFO("OpenGL context created successfully");
     POKE_CORE_TRACE("OpenGL context attributes set (4.6 Core)");
+
+    Renderer::Init();
 }
 
 Window::~Window()
