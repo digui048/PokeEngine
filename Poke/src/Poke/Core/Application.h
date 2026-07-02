@@ -2,16 +2,13 @@
 #define APPLICATION_H
 
 #include <memory>
+#include <vector>
 
 namespace Poke
 {
     class Window;
     class ImGuiManager;
-
-    class VertexArray;
-    class VertexBuffer;
-    class IndexBuffer;
-    class Shader;
+    class Module;
 
     class Application
     {
@@ -22,6 +19,9 @@ namespace Poke
         static Application &GetInstance();
 
         void Run();
+
+        void PushModule(std::shared_ptr<Module> module);
+        void ClearModules();
 
         Window *GetWindow() const { return m_window.get(); }
 
@@ -39,11 +39,7 @@ namespace Poke
         std::unique_ptr<ImGuiManager> m_imguiManager;
         bool m_Running = true;
 
-        std::unique_ptr<VertexArray> m_vao;
-        std::shared_ptr<VertexBuffer> m_vbo;
-        std::shared_ptr<IndexBuffer> m_ebo;
-
-        std::shared_ptr<Shader> m_shader;
+        std::vector<std::shared_ptr<Module>> m_modules;
     };
 }
 
