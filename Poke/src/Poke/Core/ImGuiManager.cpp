@@ -40,5 +40,6 @@ void Poke::ImGuiManager::CustomImGui()
 {
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.IniFilename = "PokeEngineEditor/assets/imgui.ini";
 }

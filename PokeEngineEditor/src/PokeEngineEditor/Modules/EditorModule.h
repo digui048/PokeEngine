@@ -4,6 +4,7 @@
 #include "Poke/Core/Module.h"
 
 #include <memory>
+#include <vector>
 
 namespace Poke
 {
@@ -11,6 +12,7 @@ namespace Poke
     class VertexBuffer;
     class IndexBuffer;
     class Shader;
+    class EditorInterface;
 
     class EditorModule : public Module
     {
@@ -23,12 +25,22 @@ namespace Poke
         void OnImGuiRender() override;
         void OnShutdown() override;
 
+        template<typename T, typename... Args>
+        void AddInterface(Args&&... args)
+        {
+            auto interface = std::make_shared<T>(std::forward<Args>(args)...);
+            interface->OnInit();
+            m_Interfaces.push_back(interface);
+        }
+
     private:
         std::unique_ptr<VertexArray> m_vao;
         std::shared_ptr<VertexBuffer> m_vbo;
         std::shared_ptr<IndexBuffer> m_ebo;
 
         std::shared_ptr<Shader> m_shader;
+
+        std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
     };
 }
 

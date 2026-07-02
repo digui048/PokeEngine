@@ -9,6 +9,9 @@
 #include "Poke/Render/IndexBuffer.h"
 #include "Poke/Render/Renderer.h"
 
+#include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
+#include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,6 +25,9 @@ EditorModule::~EditorModule() = default;
 
 void EditorModule::OnInit()
 {
+    AddInterface<HierarchyInterface>();
+    AddInterface<MainMenuBarInterface>();
+
     float vertices[] = {
         // Front face
         -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
@@ -96,6 +102,14 @@ void EditorModule::OnInit()
 
 void EditorModule::OnUpdate(float dt)
 {
+    for (auto &interface : m_Interfaces)
+    {
+        if (interface->IsOpen())
+        {
+            interface->OnUpdate(dt);
+        }
+    }
+
     float time = Time::TotalTime();
 
     glm::mat4 model = glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.5f, 1.0f, 0.0f));
@@ -114,13 +128,17 @@ void EditorModule::OnUpdate(float dt)
 
 void EditorModule::OnImGuiRender()
 {
-    ImGui::Begin("Hierarchy");
-    ImGui::Text("Scene nodes");
-    ImGui::End();
-
-    ImGui::ShowDemoWindow();
+    for (auto &interface : m_Interfaces)
+    {
+        interface->OnImGuiRender();
+    }
 }
 
 void EditorModule::OnShutdown()
 {
+    for(auto&interface : m_Interfaces)
+    {
+        interface->OnShutdown();
+    }
+    m_Interfaces.clear();
 }
