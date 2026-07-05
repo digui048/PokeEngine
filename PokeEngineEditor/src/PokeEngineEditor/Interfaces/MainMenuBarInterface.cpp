@@ -1,4 +1,5 @@
 #include "MainMenuBarInterface.h"
+#include "Poke/Core/Application.h"
 
 #include <imgui.h>
 
@@ -16,7 +17,7 @@ void MainMenuBarInterface::OnImGuiRender()
         {
             if (ImGui::MenuItem("Exit"))
             {
-                // Quit
+                Application::GetInstance().ForceQuit();
             }
             ImGui::EndMenu();
         }

@@ -7,6 +7,8 @@
 
 #include "Poke/Render/Renderer.h"
 
+#include <glad/glad.h>
+
 using namespace Poke;
 
 Application *Application::s_Instance = nullptr;
@@ -51,18 +53,17 @@ void Application::Run()
 
         OnUpdate(Time::DeltaTime());
 
-        for(auto& module : m_modules)
+        for (auto &module : m_modules)
         {
             module->OnUpdate(Time::DeltaTime());
         }
 
         m_imguiManager->BeginFrame();
 
-        for(auto& module : m_modules)
+        for (auto &module : m_modules)
         {
             module->OnImGuiRender();
         }
-        //ImGui::ShowDemoWindow();
 
         m_imguiManager->EndFrame();
 
@@ -86,11 +87,16 @@ void Application::PushModule(std::shared_ptr<Module> module)
 
 void Application::ClearModules()
 {
-    for (auto& module : m_modules)
+    for (auto &module : m_modules)
     {
         module->OnShutdown();
     }
     m_modules.clear();
+}
+
+void Poke::Application::ForceQuit()
+{
+    m_Running = false;
 }
 
 void Application::PollEvents()
@@ -107,6 +113,11 @@ void Application::PollEvents()
             m_Running = false;
             break;
 
+        case SDL_EVENT_WINDOW_RESIZED:
+            int w, h;
+            m_window->GetWindowSize(w, h);
+            glViewport(0, 0, w, h);
+            
         default:
             break;
         }

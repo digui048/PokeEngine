@@ -25,6 +25,8 @@ namespace Poke
 
         Window *GetWindow() const { return m_window.get(); }
 
+        void ForceQuit();
+
     protected:
         virtual void OnInit() {}
         virtual void OnUpdate(float dt) {}

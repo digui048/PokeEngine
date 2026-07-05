@@ -12,6 +12,9 @@
 #include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
 #include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
 
+#include "Poke/Importer/MeshImporter.h"
+#include "Poke/Resources/Mesh.h"
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -73,6 +76,8 @@ void EditorModule::OnInit()
         16, 17, 18, 18, 19, 16,
         20, 21, 22, 22, 23, 20};
 
+    models = MeshImporter::Import("PokeEngineEditor/assets/models/x.fbx");
+
     m_vao = std::make_unique<VertexArray>();
 
     m_vbo = std::make_shared<VertexBuffer>((void *)vertices, (unsigned int)sizeof(vertices));
@@ -123,7 +128,12 @@ void EditorModule::OnUpdate(float dt)
     m_shader->Bind();
     m_shader->SetUniformMatrix4f("u_MVP", mvp);
 
-    Renderer::DrawIndexed(*m_vao, *m_shader);
+    for (const auto& mesh : models)
+    {
+        Renderer::DrawIndexed(mesh.GetVertexArray(), *m_shader);
+    }
+
+    //Renderer::DrawIndexed(*m_vao, *m_shader);
 }
 
 void EditorModule::OnImGuiRender()

@@ -12,6 +12,7 @@ namespace Poke
     class VertexBuffer;
     class IndexBuffer;
     class Shader;
+    class Mesh;
     class EditorInterface;
 
     class EditorModule : public Module
@@ -41,6 +42,8 @@ namespace Poke
         std::shared_ptr<Shader> m_shader;
 
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
+        
+        std::vector<Mesh> models;
     };
 }
 

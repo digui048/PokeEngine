@@ -12,6 +12,7 @@
       "features": ["png"]
     },
     "opengl",
-    "spdlog"
+    "spdlog",
+    "assimp"
   ]
 }

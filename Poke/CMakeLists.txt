@@ -13,6 +13,7 @@ find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(assimp REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 add_library(PokeEngineCore ALIAS ${PROJECT_NAME})
@@ -27,4 +28,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     imgui::imgui
     OpenGL::GL
     spdlog::spdlog
+    assimp::assimp
 )
