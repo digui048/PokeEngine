@@ -35,15 +35,7 @@ namespace Poke
         }
 
     private:
-        std::unique_ptr<VertexArray> m_vao;
-        std::shared_ptr<VertexBuffer> m_vbo;
-        std::shared_ptr<IndexBuffer> m_ebo;
-
-        std::shared_ptr<Shader> m_shader;
-
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
-        
-        std::vector<Mesh> models;
     };
 }
 

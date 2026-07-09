@@ -8,11 +8,16 @@
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 
+#include "Poke/Render/Vulkan/VulkanContext.h"
+
 using namespace Poke;
+
+VulkanContext Renderer::s_Context{};
 
 void Renderer::Init()
 {
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
+    //s_Context.Init();
 }
 
 void Renderer::Clear()

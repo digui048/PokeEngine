@@ -5,6 +5,7 @@ namespace Poke
 {
     class VertexArray;
     class Shader;
+    class VulkanContext;
 
     class Renderer
     {
@@ -13,7 +14,10 @@ namespace Poke
         static void Clear();
         static void SetClearColor(const float r, const float g, const float b, const float a);
         static void SetViewport(const int x1, const int x2, const int width, const int height);
-        static void DrawIndexed(const VertexArray& vertexArray, const Shader& shader);
+        static void DrawIndexed(const VertexArray &vertexArray, const Shader &shader);
+
+    private:
+        static VulkanContext s_Context;
     };
 }
 
