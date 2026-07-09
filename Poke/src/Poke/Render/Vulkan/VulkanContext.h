@@ -3,9 +3,13 @@
 
 #include "VulkanInstance.h"
 #include "VulkanValidation.h"
+#include "VulkanPhysicalDevice.h"
 
 namespace Poke
 {
+    class VulkanInstance;
+    class VulkanValidation;
+
     class VulkanContext
     {
     public:
@@ -20,6 +24,7 @@ namespace Poke
     private:
         VulkanInstance m_instance;
         VulkanValidation m_validation;
+        VulkanPhysicalDevice m_physicalDevice;
     };
 }
 

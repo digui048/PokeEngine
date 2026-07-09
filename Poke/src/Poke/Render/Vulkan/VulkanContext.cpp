@@ -1,7 +1,5 @@
 #include "VulkanContext.h"
 
-#include "VulkanValidation.h"
-
 using namespace Poke;
 
 VulkanContext::~VulkanContext()
@@ -13,6 +11,7 @@ void VulkanContext::Init()
 {
     m_instance.Init();
     m_validation.Init(m_instance);
+    m_physicalDevice.Init(m_instance);
 }
 
 void VulkanContext::Shutdown()
