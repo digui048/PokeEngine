@@ -21,6 +21,8 @@
 
 #include <imgui.h>
 
+#include <vulkan/vulkan.h>
+
 using namespace Poke;
 
 EditorModule::EditorModule() = default;

@@ -9,6 +9,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SOURCES})
 find_package(SDL3 REQUIRED)
 find_package(SDL3_image REQUIRED)
 find_package(glad REQUIRED)
+find_package(Vulkan REQUIRED)
 find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -27,6 +28,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     glm::glm
     imgui::imgui
     OpenGL::GL
+    Vulkan::Vulkan
     spdlog::spdlog
     assimp::assimp
 )

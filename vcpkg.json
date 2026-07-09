@@ -4,7 +4,7 @@
     "glm",
     {
       "name": "imgui",
-      "features": [ "opengl3-binding", "sdl3-binding", "docking-experimental"]
+      "features": [ "opengl3-binding", "vulkan-binding", "sdl3-binding", "docking-experimental"]
     },
     "sdl3",
     {
@@ -12,6 +12,7 @@
       "features": ["png"]
     },
     "opengl",
+    "vulkan",
     "spdlog",
     "assimp"
   ]
