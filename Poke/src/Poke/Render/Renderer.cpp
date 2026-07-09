@@ -12,12 +12,11 @@
 
 using namespace Poke;
 
-VulkanContext Renderer::s_Context{};
+std::unique_ptr<Poke::VulkanContext> Poke::Renderer::s_Context = nullptr;
 
 void Renderer::Init()
 {
-    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-    //s_Context.Init();
+    s_Context->Init();
 }
 
 void Renderer::Clear()

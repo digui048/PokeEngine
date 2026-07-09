@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include <memory>
+
 namespace Poke
 {
     class VertexArray;
@@ -17,7 +19,7 @@ namespace Poke
         static void DrawIndexed(const VertexArray &vertexArray, const Shader &shader);
 
     private:
-        static VulkanContext s_Context;
+        static std::unique_ptr<VulkanContext> s_Context;
     };
 }
 

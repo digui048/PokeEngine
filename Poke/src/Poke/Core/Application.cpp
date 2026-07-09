@@ -41,7 +41,7 @@ void Application::Run()
 
     OnInit();
 
-    Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+    //Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
     while (m_Running)
     {
@@ -49,7 +49,7 @@ void Application::Run()
 
         PollEvents();
 
-        Renderer::Clear();
+        //Renderer::Clear();
 
         OnUpdate(Time::DeltaTime());
 
@@ -116,7 +116,7 @@ void Application::PollEvents()
         case SDL_EVENT_WINDOW_RESIZED:
             int w, h;
             m_window->GetWindowSize(w, h);
-            glViewport(0, 0, w, h);
+            //glViewport(0, 0, w, h);
             
         default:
             break;
