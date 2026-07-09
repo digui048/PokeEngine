@@ -2,6 +2,7 @@
 #define VULKAN_CONTEXT_H
 
 #include "VulkanInstance.h"
+#include "VulkanValidation.h"
 
 namespace Poke
 {
@@ -18,6 +19,7 @@ namespace Poke
 
     private:
         VulkanInstance m_instance;
+        VulkanValidation m_validation;
     };
 }
 

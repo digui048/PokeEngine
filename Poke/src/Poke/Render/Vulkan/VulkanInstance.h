@@ -3,8 +3,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 namespace Poke
 {
+    class VulkanValidation;
+
     class VulkanInstance
     {
     public:
@@ -14,7 +18,9 @@ namespace Poke
         void Init();
         void Shutdown();
 
-        VkInstance GetInstance() const { return m_instance; }
+        VkInstance GetHandle() const { return m_instance; }
+
+        std::vector<const char*> GetRequiredExtensions() const;
 
     private:
         void CreateInstance();
