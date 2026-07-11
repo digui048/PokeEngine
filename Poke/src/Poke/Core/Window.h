@@ -19,7 +19,7 @@ namespace Poke
         ~Window();
 
         SDL_Window *GetSDLWindow() const { return m_window; }
-        SDL_GLContext GetSDLContext() const { return m_GLContext; }
+        
         void GetWindowSize(int &w, int &h);
 
         void SetTitle(const std::string &name);
@@ -29,7 +29,6 @@ namespace Poke
 
     private:
         SDL_Window *m_window = nullptr;
-        SDL_GLContext m_GLContext = nullptr;
     };
 }
 

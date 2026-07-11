@@ -16,6 +16,7 @@ std::unique_ptr<Poke::VulkanContext> Poke::Renderer::s_Context = nullptr;
 
 void Renderer::Init()
 {
+    s_Context = std::make_unique<VulkanContext>();
     s_Context->Init();
 }
 

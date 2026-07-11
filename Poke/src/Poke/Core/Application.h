@@ -38,7 +38,7 @@ namespace Poke
     private:
         static Application *s_Instance;
         std::unique_ptr<Window> m_window;
-        std::unique_ptr<ImGuiManager> m_imguiManager;
+        //std::unique_ptr<ImGuiManager> m_imguiManager;
         bool m_Running = true;
 
         std::vector<std::shared_ptr<Module>> m_modules;

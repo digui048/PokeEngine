@@ -25,7 +25,7 @@ Application::Application()
 
     Time::Init();
 
-    m_imguiManager = std::make_unique<ImGuiManager>();
+    //m_imguiManager = std::make_unique<ImGuiManager>();
 }
 
 Application::~Application() = default;
@@ -37,7 +37,7 @@ Application &Application::GetInstance()
 
 void Application::Run()
 {
-    m_imguiManager->Init();
+    //m_imguiManager->Init();
 
     OnInit();
 
@@ -58,14 +58,14 @@ void Application::Run()
             module->OnUpdate(Time::DeltaTime());
         }
 
-        m_imguiManager->BeginFrame();
+        //m_imguiManager->BeginFrame();
 
         for (auto &module : m_modules)
         {
             module->OnImGuiRender();
         }
 
-        m_imguiManager->EndFrame();
+        //m_imguiManager->EndFrame();
 
         m_window->SwapWindow();
     }
@@ -73,7 +73,7 @@ void Application::Run()
     ClearModules();
     OnShutdown();
 
-    m_imguiManager.reset();
+    //m_imguiManager.reset();
     m_window.reset();
 
     POKE_CORE_INFO("Engine shutdown");
@@ -105,7 +105,7 @@ void Application::PollEvents()
 
     while (SDL_PollEvent(&sdlEvent))
     {
-        ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
+        //ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
 
         switch (sdlEvent.type)
         {

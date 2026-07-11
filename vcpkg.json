@@ -6,7 +6,10 @@
       "name": "imgui",
       "features": [ "opengl3-binding", "vulkan-binding", "sdl3-binding", "docking-experimental"]
     },
-    "sdl3",
+    {
+      "name": "sdl3",
+      "features": ["vulkan"]
+    },
     {
       "name": "sdl3-image",
       "features": ["png"]

@@ -3,6 +3,7 @@
 #include "Poke/Render/Renderer.h"
 
 #include <SDL3_image/SDL_image.h>
+#include <SDL3/SDL_vulkan.h>
 
 using namespace Poke;
 
@@ -11,18 +12,9 @@ Window::Window(std::string name, int width, int height)
     POKE_ASSERT(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0, "Failed to initialise SDL: {}", SDL_GetError());
     POKE_CORE_INFO("SDL initialized successfully");
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-    m_window = SDL_CreateWindow(name.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    m_window = SDL_CreateWindow(name.c_str(), width, height, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     POKE_ASSERT(m_window != nullptr, "SDL_CreateWindow failed: {}", SDL_GetError());
     POKE_CORE_INFO("Window created: {}x{}", width, height);
-
-    m_GLContext = SDL_GL_CreateContext(m_window);
-    POKE_ASSERT(m_GLContext != nullptr, "SDL_GL_CreateContext failed: {}", SDL_GetError());
-    POKE_CORE_INFO("OpenGL context created successfully");
-    POKE_CORE_TRACE("OpenGL context attributes set (4.6 Core)");
 
     Renderer::Init();
 }
@@ -31,7 +23,6 @@ Window::~Window()
 {
     if (m_window != nullptr)
     {
-        SDL_GL_DestroyContext(m_GLContext);
         SDL_DestroyWindow(m_window);
         SDL_Quit();
         m_window = nullptr;
@@ -74,5 +65,4 @@ bool Window::SetIcon(const std::string &path)
 
 void Window::SwapWindow() const
 {
-    SDL_GL_SwapWindow(m_window);
 }
