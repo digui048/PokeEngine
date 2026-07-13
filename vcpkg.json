@@ -8,7 +8,7 @@
     },
     {
       "name": "sdl3",
-      "features": ["vulkan"]
+      "features": ["vulkan", "wayland"]
     },
     {
       "name": "sdl3-image",

@@ -5,6 +5,7 @@
 #include "VulkanValidation.h"
 #include "VulkanPhysicalDevice.h"
 #include "VulkanDevice.h"
+#include "VulkanSurface.h"
 
 namespace Poke
 {
@@ -27,6 +28,7 @@ namespace Poke
         VulkanValidation m_validation;
         VulkanPhysicalDevice m_physicalDevice;
         VulkanDevice m_device;
+        VulkanSurface m_surface;
     };
 }
 

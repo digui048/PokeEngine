@@ -29,6 +29,7 @@ namespace Poke
         private:
             VkDevice m_device = VK_NULL_HANDLE;
             VkQueue m_graphicsQueue = VK_NULL_HANDLE;
+            VkQueue m_presentQueue = VK_NULL_HANDLE;
     };
 }
 

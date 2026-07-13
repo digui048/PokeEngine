@@ -25,6 +25,8 @@ Application::Application()
 
     Time::Init();
 
+    Renderer::Init();
+
     //m_imguiManager = std::make_unique<ImGuiManager>();
 }
 

@@ -62,24 +62,34 @@ void VulkanInstance::CreateInstance()
     createInfo.pApplicationInfo = &appInfo;
 
     auto extensions = GetRequiredExtensions();
+
+    if (extensions.empty())
+    {
+        POKE_CORE_CRITICAL("Failed to resolve Vulkan instance extensions");
+    }
+
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     if (VulkanValidation::IsEnabled())
     {
-        if(!VulkanValidation::CheckValidationLayerSupport())
+        if (VulkanValidation::CheckValidationLayerSupport())
         {
-            POKE_CORE_CRITICAL("Validation layers requested are not available");
+            auto& layers = VulkanValidation::GetValidationLayers();
+            createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+            createInfo.ppEnabledLayerNames = layers.data();
+
+            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT();
+
+            VulkanValidation::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+            createInfo.pNext = &debugCreateInfo;
         }
-
-        auto& layers = VulkanValidation::GetValidationLayers();
-        createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
-        createInfo.ppEnabledLayerNames = layers.data();
-
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT();
-
-        VulkanValidation::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = &debugCreateInfo;
+        else
+        {
+            POKE_CORE_WARN("Validation layers requested but unavailable; creating Vulkan instance without them");
+            createInfo.enabledLayerCount = 0;
+            createInfo.ppEnabledLayerNames = nullptr;
+        }
     }
     else
     {

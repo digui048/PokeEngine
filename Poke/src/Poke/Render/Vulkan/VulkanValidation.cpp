@@ -16,6 +16,12 @@ void VulkanValidation::Init(VulkanInstance &instance)
         return;
     }
 
+    if (!CheckValidationLayerSupport())
+    {
+        POKE_CORE_WARN("Validation layers are not available; continuing without Vulkan validation");
+        return;
+    }
+
     SetupDebugMessenger(instance);
 }
 
@@ -138,7 +144,7 @@ VkResult VulkanValidation::CreateDebugUtilsMessengerEXT(VkInstance instance, con
 
 void VulkanValidation::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator)
 {
-    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
     if (func != nullptr)
     {
         func(instance, debugMessenger, pAllocator);

@@ -8,6 +8,7 @@
 namespace Poke
 {
     class VulkanInstance;
+    class VulkanSurface;
 
     class VulkanPhysicalDevice
     {
@@ -15,21 +16,21 @@ namespace Poke
         VulkanPhysicalDevice() = default;
         ~VulkanPhysicalDevice();
 
-        void Init(VulkanInstance &instance);
+        void Init(VulkanInstance &instance, VulkanSurface &surface);
         void Shutdown();
 
         VkPhysicalDevice GetHandle() const { return m_physicalDevice; }
-        const QueueFamilyIndices& GetQueueFamilies() const { return m_queueFamilies; }
+        const QueueFamilyIndices &GetQueueFamilies() const { return m_queueFamilies; }
 
-        const VkPhysicalDeviceProperties& GetProperties() const { return m_properties; }
-        const VkPhysicalDeviceFeatures& GetFeatures() const { return m_features; }
+        const VkPhysicalDeviceProperties &GetProperties() const { return m_properties; }
+        const VkPhysicalDeviceFeatures &GetFeatures() const { return m_features; }
 
     private:
-        void PickPhysicalDevice(VulkanInstance& instance);
-        
-        bool IsDeviceSuitable(VkPhysicalDevice device);
+        void PickPhysicalDevice(VulkanInstance &instance, VulkanSurface &surface);
 
-        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+        bool IsDeviceSuitable(VkPhysicalDevice device, VulkanSurface &surface);
+
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VulkanSurface &surface);
 
     private:
         VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
