@@ -1,27 +1,27 @@
-#ifndef IMGUI_MANAGER_H
-#define IMGUI_MANAGER_H
+// #ifndef IMGUI_MANAGER_H
+// #define IMGUI_MANAGER_H
 
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_vulkan.h"
+// #include "imgui.h"
+// #include "imgui_impl_sdl3.h"
+// #include "imgui_impl_vulkan.h"
 
-namespace Poke
-{
-    class ImGuiManager
-    {
-    public:
-        ImGuiManager() = default;
-        ~ImGuiManager();
+// namespace Poke
+// {
+//     class ImGuiManager
+//     {
+//     public:
+//         ImGuiManager() = default;
+//         ~ImGuiManager();
 
-        void Init();
-        void GetEvents();
+//         void Init();
+//         void GetEvents();
 
-        void BeginFrame();
-        void EndFrame();
+//         void BeginFrame();
+//         void EndFrame();
 
-    private:
-        void CustomImGui();
-    };
-}
+//     private:
+//         void CustomImGui();
+//     };
+// }
 
-#endif
+// #endif

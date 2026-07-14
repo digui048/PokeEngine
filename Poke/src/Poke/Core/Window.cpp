@@ -9,15 +9,12 @@ using namespace Poke;
 
 Window::Window(std::string name, int width, int height)
 {
-    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland,x11");
+    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11, wayland");
 
     POKE_ASSERT(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0, "Failed to initialise SDL: {}", SDL_GetError());
     POKE_CORE_INFO("SDL initialized successfully");
 
-    POKE_ASSERT(SDL_Vulkan_LoadLibrary(nullptr) == 0, "Failed to load Vulkan library: {}", SDL_GetError());
-
-    const char* driver_name = SDL_GetCurrentVideoDriver();
-    POKE_CORE_INFO("SDL is using video driver: {0}", driver_name);
+    POKE_CORE_INFO("SDL is using video driver: {0}", SDL_GetCurrentVideoDriver());
 
     m_window = SDL_CreateWindow(name.c_str(), width, height, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
     POKE_ASSERT(m_window != nullptr, "SDL_CreateWindow failed: {}", SDL_GetError());

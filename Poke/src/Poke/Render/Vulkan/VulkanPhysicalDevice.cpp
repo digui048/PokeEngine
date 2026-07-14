@@ -43,15 +43,41 @@ void VulkanPhysicalDevice::PickPhysicalDevice(VulkanInstance &instance, VulkanSu
 
     vkEnumeratePhysicalDevices(instance.GetHandle(), &deviceCount, devices.data());
 
+    VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
+    int bestScore = -1;
+    QueueFamilyIndices bestQueueFamilies;
+
     for (VkPhysicalDevice device : devices)
     {
         if (IsDeviceSuitable(device, surface))
         {
-            m_physicalDevice = device;
-            m_queueFamilies = FindQueueFamilies(device, surface);
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
 
-            return;
+            int score = 0;
+            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            {
+                score += 1000;
+            }
+            else if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+            {
+                score += 100;
+            }
+
+            if (score > bestScore)
+            {
+                bestDevice = device;
+                bestScore = score;
+                bestQueueFamilies = FindQueueFamilies(device, surface);
+            }
         }
+    }
+
+    if (bestDevice != VK_NULL_HANDLE)
+    {
+        m_physicalDevice = bestDevice;
+        m_queueFamilies = bestQueueFamilies;
+        return;
     }
 
     POKE_CORE_CRITICAL("Failed to find a suitable GPU");
@@ -63,7 +89,7 @@ bool VulkanPhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VulkanSurfa
     return indices.IsComplete();
 }
 
-QueueFamilyIndices Poke::VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VulkanSurface& surface)
+QueueFamilyIndices Poke::VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VulkanSurface &surface)
 {
     QueueFamilyIndices indices;
     uint32_t queueFamilyCount = 0;
@@ -84,7 +110,7 @@ QueueFamilyIndices Poke::VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevic
 
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface.GetHandle(), &presentSupport);
-        if(presentSupport)
+        if (presentSupport)
         {
             indices.PresentFamily = i;
         }

@@ -24,6 +24,8 @@ void VulkanDevice::Shutdown()
     {
         vkDestroyDevice(m_device, nullptr);
         m_device = VK_NULL_HANDLE;
+        m_graphicsQueue = VK_NULL_HANDLE;
+        m_presentQueue = VK_NULL_HANDLE;
     }
 }
 
@@ -50,6 +52,7 @@ void VulkanDevice::CreateLogicalDevice(VulkanInstance &instance, VulkanPhysicalD
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
