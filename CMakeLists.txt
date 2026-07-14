@@ -20,8 +20,41 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if (MSVC)
     add_compile_options(/GR- /EHs-)
 else()
-    add_compile_options(-fno-rtti)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
 endif()
+
+set(SDL_VULKAN ON CACHE BOOL "" FORCE)
+set(SDL_WAYLAND ON CACHE BOOL "" FORCE)
+set(SDL_X11 ON CACHE BOOL "" FORCE)
+set(SDL_SHARED ON CACHE BOOL "" FORCE)
+set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+add_subdirectory("vendor/SDL")
+
+set(SDLIMAGE_VENDORED OFF CACHE BOOL "" FORCE)
+set(SDLIMAGE_PNG ON CACHE BOOL "" FORCE)
+add_subdirectory("vendor/SDL_image")
+
+find_package(Vulkan REQUIRED MODULE)
+
+set(IMGUI_SOURCES
+    "vendor/imgui/imgui.cpp"
+    "vendor/imgui/imgui_demo.cpp"
+    "vendor/imgui/imgui_draw.cpp"
+    "vendor/imgui/imgui_tables.cpp"
+    "vendor/imgui/imgui_widgets.cpp"
+    "vendor/imgui/backends/imgui_impl_sdl3.cpp"
+    "vendor/imgui/backends/imgui_impl_vulkan.cpp" 
+)
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC
+    "vendor/imgui"
+    "vendor/imgui/backends"
+)
+
+target_link_libraries(imgui PUBLIC 
+    SDL3::SDL3-shared
+    Vulkan::Vulkan
+)
 
 add_subdirectory("Poke")
 add_subdirectory("PokeEngineEditor")

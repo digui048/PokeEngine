@@ -2,19 +2,6 @@
   "dependencies": [
     "glad",
     "glm",
-    {
-      "name": "imgui",
-      "features": [ "opengl3-binding", "vulkan-binding", "sdl3-binding", "docking-experimental"]
-    },
-    {
-      "name": "sdl3",
-      "features": ["vulkan", "wayland"]
-    },
-    {
-      "name": "sdl3-image",
-      "features": ["png"]
-    },
-    "opengl",
     "spdlog",
     "assimp"
   ]
