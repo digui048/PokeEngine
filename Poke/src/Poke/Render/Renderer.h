@@ -13,6 +13,7 @@ namespace Poke
     {
     public:
         static void Init();
+        static void Shutdown();
         static void Clear();
         static void SetClearColor(const float r, const float g, const float b, const float a);
         static void SetViewport(const int x1, const int x2, const int width, const int height);

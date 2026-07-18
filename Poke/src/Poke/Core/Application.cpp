@@ -75,6 +75,8 @@ void Application::Run()
     ClearModules();
     OnShutdown();
 
+    Renderer::Shutdown();
+
     //m_imguiManager.reset();
     m_window.reset();
 

@@ -20,6 +20,11 @@ void Renderer::Init()
     s_Context->Init();
 }
 
+void Poke::Renderer::Shutdown()
+{
+    s_Context.reset();
+}
+
 void Renderer::Clear()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
