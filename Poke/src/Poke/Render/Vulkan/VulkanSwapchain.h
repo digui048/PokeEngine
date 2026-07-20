@@ -30,9 +30,12 @@ namespace Poke
         VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
         VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capablities, Window& window);
 
+        void CreateImageViews(VkDevice logicalDevice);
+
     private:
         VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> m_images;
+        std::vector<VkImageView> m_imageViews;
         VkFormat m_imageFormat;
         VkExtent2D m_extent;
     };
