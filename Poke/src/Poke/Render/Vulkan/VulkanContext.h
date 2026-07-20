@@ -6,11 +6,10 @@
 #include "VulkanPhysicalDevice.h"
 #include "VulkanDevice.h"
 #include "VulkanSurface.h"
+#include "VulkanSwapchain.h"
 
 namespace Poke
 {
-    class VulkanInstance;
-    class VulkanValidation;
     class Window;
 
     class VulkanContext
@@ -30,6 +29,7 @@ namespace Poke
         VulkanPhysicalDevice m_physicalDevice;
         VulkanDevice m_device;
         VulkanSurface m_surface;
+        VulkanSwapchain m_swapchain;
     };
 }
 

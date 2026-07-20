@@ -27,5 +27,6 @@ void VulkanSurface::Shutdown(VulkanInstance &instance)
     {
         vkDestroySurfaceKHR(instance.GetHandle(), m_surface, nullptr);
         m_surface = VK_NULL_HANDLE;
+        POKE_CORE_INFO("[Vulkan] Destroying Vulkan Surface");
     }
 }

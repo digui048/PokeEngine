@@ -9,7 +9,6 @@ using namespace Poke;
 
 VulkanInstance::~VulkanInstance()
 {
-    Shutdown();
 }
 
 void VulkanInstance::Init()
@@ -23,6 +22,7 @@ void VulkanInstance::Shutdown()
     {
         vkDestroyInstance(m_instance, nullptr);
         m_instance = VK_NULL_HANDLE;
+        POKE_CORE_INFO("[Vulkan] Destroying Vulkan Instance");
     }
 }
 

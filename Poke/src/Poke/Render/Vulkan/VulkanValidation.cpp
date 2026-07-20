@@ -35,8 +35,8 @@ void VulkanValidation::Shutdown(VulkanInstance &instance)
     if (m_debugMessenger != VK_NULL_HANDLE)
     {
         DestroyDebugUtilsMessengerEXT(instance.GetHandle(), m_debugMessenger, nullptr);
-
         m_debugMessenger = VK_NULL_HANDLE;
+        POKE_CORE_INFO("[Vulkan] Destroying Vulkan Validation");
     }
 }
 

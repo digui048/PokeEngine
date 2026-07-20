@@ -12,7 +12,6 @@ using namespace Poke;
 
 VulkanPhysicalDevice::~VulkanPhysicalDevice()
 {
-    Shutdown();
 }
 
 void VulkanPhysicalDevice::Init(VulkanInstance &instance, VulkanSurface &surface)
@@ -28,6 +27,7 @@ void VulkanPhysicalDevice::Init(VulkanInstance &instance, VulkanSurface &surface
 void VulkanPhysicalDevice::Shutdown()
 {
     m_physicalDevice = VK_NULL_HANDLE;
+    POKE_CORE_INFO("[Vulkan] Destroying Vulkan Physical Device");
 }
 
 SwapChainSupportDetails Poke::VulkanPhysicalDevice::QuerySwapChainSupport(VkPhysicalDevice device, VulkanSurface &surface)
@@ -116,14 +116,14 @@ bool VulkanPhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VulkanSurfa
     QueueFamilyIndices indices = FindQueueFamilies(device, surface);
     bool extensionsSupported = CheckDeviceExtensionsSuport(device);
 
-    bool swapChainCorrect = false;
+    bool swapChainAdequate = false;
     if (extensionsSupported)
     {
         SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device, surface);
-        swapChainCorrect = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
+        swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
     }
 
-    return indices.IsComplete() && extensionsSupported && swapChainCorrect;
+    return indices.IsComplete() && extensionsSupported && swapChainAdequate;
 }
 
 bool Poke::VulkanPhysicalDevice::CheckDeviceExtensionsSuport(VkPhysicalDevice device)

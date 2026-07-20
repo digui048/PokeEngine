@@ -10,7 +10,6 @@ using namespace Poke;
 
 VulkanDevice::~VulkanDevice()
 {
-    Shutdown();
 }
 
 void VulkanDevice::Init(VulkanInstance &instance, VulkanPhysicalDevice &physicalDevice)
@@ -26,6 +25,7 @@ void VulkanDevice::Shutdown()
         m_device = VK_NULL_HANDLE;
         m_graphicsQueue = VK_NULL_HANDLE;
         m_presentQueue = VK_NULL_HANDLE;
+        POKE_CORE_INFO("[Vulkan] Destroying Vulkan Device");
     }
 }
 

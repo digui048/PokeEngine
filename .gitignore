@@ -24,4 +24,5 @@ CMakeSettings.json
 /out/
 /logs/
 
+vendor/
 vcpkg/
