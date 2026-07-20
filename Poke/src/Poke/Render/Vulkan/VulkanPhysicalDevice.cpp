@@ -1,6 +1,8 @@
 #include "VulkanPhysicalDevice.h"
 
 #include <vector>
+#include <string>
+#include <set>
 
 #include "Poke/Core/Log.h"
 #include "VulkanInstance.h"
@@ -26,6 +28,31 @@ void VulkanPhysicalDevice::Init(VulkanInstance &instance, VulkanSurface &surface
 void VulkanPhysicalDevice::Shutdown()
 {
     m_physicalDevice = VK_NULL_HANDLE;
+}
+
+SwapChainSupportDetails Poke::VulkanPhysicalDevice::QuerySwapChainSupport(VkPhysicalDevice device, VulkanSurface &surface)
+{
+    SwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface.GetHandle(), &details.Capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface.GetHandle(), &formatCount, nullptr);
+    if (formatCount != 0)
+    {
+        details.Formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface.GetHandle(), &formatCount, details.Formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface.GetHandle(), &presentModeCount, nullptr);
+    if (presentModeCount != 0)
+    {
+        details.PresentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface.GetHandle(), &presentModeCount, details.PresentModes.data());
+    }
+
+    return details;
 }
 
 void VulkanPhysicalDevice::PickPhysicalDevice(VulkanInstance &instance, VulkanSurface &surface)
@@ -69,6 +96,7 @@ void VulkanPhysicalDevice::PickPhysicalDevice(VulkanInstance &instance, VulkanSu
                 bestDevice = device;
                 bestScore = score;
                 bestQueueFamilies = FindQueueFamilies(device, surface);
+                m_swapChainSupport = QuerySwapChainSupport(device, surface);
             }
         }
     }
@@ -86,7 +114,34 @@ void VulkanPhysicalDevice::PickPhysicalDevice(VulkanInstance &instance, VulkanSu
 bool VulkanPhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VulkanSurface &surface)
 {
     QueueFamilyIndices indices = FindQueueFamilies(device, surface);
-    return indices.IsComplete();
+    bool extensionsSupported = CheckDeviceExtensionsSuport(device);
+
+    bool swapChainCorrect = false;
+    if (extensionsSupported)
+    {
+        SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device, surface);
+        swapChainCorrect = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
+    }
+
+    return indices.IsComplete() && extensionsSupported && swapChainCorrect;
+}
+
+bool Poke::VulkanPhysicalDevice::CheckDeviceExtensionsSuport(VkPhysicalDevice device)
+{
+    uint32_t extensionsCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionsCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(m_deviceExtensions.begin(), m_deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions)
+    {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
 }
 
 QueueFamilyIndices Poke::VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VulkanSurface &surface)
