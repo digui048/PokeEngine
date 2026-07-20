@@ -11,6 +11,7 @@ namespace Poke
 {
     class VulkanInstance;
     class VulkanValidation;
+    class Window;
 
     class VulkanContext
     {
@@ -18,7 +19,7 @@ namespace Poke
         VulkanContext() = default;
         ~VulkanContext();
         
-        void Init();
+        void Init(Window& window);
         void Shutdown();
 
         VulkanInstance& GetInstance() { return m_instance; }

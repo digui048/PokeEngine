@@ -4,6 +4,7 @@
 #include "Shader.h"
 
 #include "Poke/Core/Assert.h"
+#include "Poke/Core/Window.h"
 
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
@@ -14,10 +15,10 @@ using namespace Poke;
 
 std::unique_ptr<Poke::VulkanContext> Poke::Renderer::s_Context = nullptr;
 
-void Renderer::Init()
+void Renderer::Init(Window& window)
 {
     s_Context = std::make_unique<VulkanContext>();
-    s_Context->Init();
+    s_Context->Init(window);
 }
 
 void Poke::Renderer::Shutdown()

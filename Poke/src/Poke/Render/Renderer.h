@@ -9,10 +9,12 @@ namespace Poke
     class Shader;
     class VulkanContext;
 
+    class Window;
+
     class Renderer
     {
     public:
-        static void Init();
+        static void Init(Window& window);
         static void Shutdown();
         static void Clear();
         static void SetClearColor(const float r, const float g, const float b, const float a);

@@ -16,3 +16,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC PokeEngineCore)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/assets")
     file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/assets" DESTINATION "${OUTPUT_PATH}")
 endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config")
+    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/config" DESTINATION "${OUTPUT_PATH}")
+endif()
