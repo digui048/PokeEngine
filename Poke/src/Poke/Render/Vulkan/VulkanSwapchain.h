@@ -24,11 +24,12 @@ namespace Poke
         VkFormat GetImageFormat() const { return m_imageFormat; }
         VkExtent2D GetExtent() const { return m_extent; }
         const std::vector<VkImage> &GetImages() const { return m_images; }
+        const std::vector<VkImageView> &GetImagesViews() const { return m_imageViews; }
 
     private:
-        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-        VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capablities, Window& window);
+        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
+        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
+        VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capablities, Window &window);
 
         void CreateImageViews(VkDevice logicalDevice);
 
