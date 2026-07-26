@@ -8,6 +8,7 @@ namespace Poke
 {
     class VulkanDevice;
     class VulkanSwapchain;
+    class VulkanRenderPass;
 
     class VulkanPipeline
     {
@@ -15,7 +16,7 @@ namespace Poke
         VulkanPipeline() = default;
         ~VulkanPipeline() = default;
 
-        void Init(VulkanDevice& device, VulkanSwapchain& swapchain, const std::string& vertPath, const std::string& fragPath);
+        void Init(VulkanDevice& device, VulkanSwapchain& swapchain, VulkanRenderPass &renderPass, const std::string& vertPath, const std::string& fragPath);
         void Shutdown(VulkanDevice& device);
 
         VkPipeline GetPipeline() const { return m_pipeline; }
