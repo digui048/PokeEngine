@@ -2,15 +2,12 @@
 #define VULKAN_COMMANDS_H
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace Poke
 {
     class VulkanDevice;
     class VulkanPhysicalDevice;
-    class VulkanSwapchain;
-    class VulkanRenderPass;
-    class VulkanFramebuffer;
-    class VulkanPipeline;
 
     class VulkanCommands
     {
@@ -21,13 +18,11 @@ namespace Poke
         void Init(VulkanDevice& device, VulkanPhysicalDevice& physicalDevice);
         void Shutdown(VulkanDevice &device);
 
-        void RecordCommandBuffer(VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, VulkanFramebuffer &framebuffers, VulkanPipeline &pipeline, uint32_t imageIndex);
-
-        VkCommandBuffer GetCommandBuffer() const { return m_commandBuffer; }
+        VkCommandBuffer GetCommandBuffer(uint32_t frameIndex) const { return m_commandBuffers[frameIndex]; }
 
     private:
         VkCommandPool m_commandPool = VK_NULL_HANDLE;
-        VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
+        std::vector<VkCommandBuffer> m_commandBuffers;
     };
 }
 

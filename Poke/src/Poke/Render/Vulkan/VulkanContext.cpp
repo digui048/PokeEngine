@@ -22,7 +22,7 @@ void VulkanContext::Init(Window &window)
     m_pipeline.Init(m_device, m_swapchain, m_renderPass, "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.vert.spv", "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.frag.spv");
     m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
     m_commands.Init(m_device, m_physicalDevice);
-    m_sync.Init(m_device);
+    m_sync.Init(m_device, m_swapchain);
 }
 
 void VulkanContext::Shutdown()
@@ -43,12 +43,15 @@ void VulkanContext::Shutdown()
 VkCommandBuffer VulkanContext::BeginFrame(float r, float g, float b, float a)
 {
     VkDevice device = m_device.GetHandle();
-    VkFence inFlightFence = m_sync.GetInFlightFence();
-    VkCommandBuffer cmd = m_commands.GetCommandBuffer();
+    VkFence inFlightFence = m_sync.GetInFlightFence(m_currentFrame);
 
     vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+    
+    vkAcquireNextImageKHR(device, m_swapchain.GetHandle(), UINT64_MAX, m_sync.GetImageAvailableSemaphore(m_currentFrame), VK_NULL_HANDLE, &m_currentImageIndex);
+
     vkResetFences(device, 1, &inFlightFence);
-    vkAcquireNextImageKHR(device, m_swapchain.GetHandle(), UINT64_MAX, m_sync.GetImageAvailableSemaphore(), VK_NULL_HANDLE, &m_currentImageIndex);
+
+    VkCommandBuffer cmd = m_commands.GetCommandBuffer(m_currentFrame);
     vkResetCommandBuffer(cmd, 0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -73,8 +76,8 @@ VkCommandBuffer VulkanContext::BeginFrame(float r, float g, float b, float a)
 
 void VulkanContext::EndFrame()
 {
-    VkCommandBuffer cmd = m_commands.GetCommandBuffer();
-    VkFence inFlightFence = m_sync.GetInFlightFence();
+    VkCommandBuffer cmd = m_commands.GetCommandBuffer(m_currentFrame);
+    VkFence inFlightFence = m_sync.GetInFlightFence(m_currentFrame);
 
     vkCmdEndRenderPass(cmd);
 
@@ -86,7 +89,7 @@ void VulkanContext::EndFrame()
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = {m_sync.GetImageAvailableSemaphore()};
+    VkSemaphore waitSemaphores[] = {m_sync.GetImageAvailableSemaphore(m_currentFrame)};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -95,7 +98,7 @@ void VulkanContext::EndFrame()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmd;
 
-    VkSemaphore signalSemaphores[] = {m_sync.GetRenderFinishedSemaphore()};
+    VkSemaphore signalSemaphores[] = {m_sync.GetRenderFinishedSemaphore(m_currentImageIndex)};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -115,11 +118,13 @@ void VulkanContext::EndFrame()
     presentInfo.pImageIndices = &m_currentImageIndex;
 
     vkQueuePresentKHR(m_device.GetPresentQueue(), &presentInfo);
+    
+    m_currentFrame = (m_currentFrame + 1) % VulkanSync::MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanContext::DrawTriangle()
 {
-    VkCommandBuffer cmd = m_commands.GetCommandBuffer();
+    VkCommandBuffer cmd = m_commands.GetCommandBuffer(m_currentFrame);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
 
     VkViewport viewport{};

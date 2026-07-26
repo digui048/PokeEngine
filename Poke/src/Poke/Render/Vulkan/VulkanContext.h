@@ -48,6 +48,7 @@ namespace Poke
         VulkanSync m_sync;
     private:
         uint32_t m_currentImageIndex = 0;
+        uint32_t m_currentFrame = 0;
     };
 }
 

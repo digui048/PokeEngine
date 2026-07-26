@@ -2,28 +2,32 @@
 #define VULKAN_SYNC_H
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace Poke
 {
     class VulkanDevice;
+    class VulkanSwapchain;
 
     class VulkanSync
     {
     public:
+        static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
         VulkanSync() = default;
         ~VulkanSync() = default;
 
-        void Init(VulkanDevice &device);
+        void Init(VulkanDevice &device, VulkanSwapchain &swapchain);
         void Shutdown(VulkanDevice &device);
 
-        VkSemaphore GetImageAvailableSemaphore() const { return m_imageAvailableSemaphore; }
-        VkSemaphore GetRenderFinishedSemaphore() const { return m_renderFinishedSemaphore; }
-        VkFence GetInFlightFence() const { return m_inFlightFence; }
+        VkSemaphore GetImageAvailableSemaphore(uint32_t frameIndex) const { return m_imageAvailableSemaphores[frameIndex]; }
+        VkSemaphore GetRenderFinishedSemaphore(uint32_t frameIndex) const { return m_renderFinishedSemaphores[frameIndex]; }
+        VkFence GetInFlightFence(uint32_t frameIndex) const { return m_inFlightFences[frameIndex]; }
 
     private:
-        VkSemaphore m_imageAvailableSemaphore = VK_NULL_HANDLE;
-        VkSemaphore m_renderFinishedSemaphore = VK_NULL_HANDLE;
-        VkFence m_inFlightFence = VK_NULL_HANDLE;
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+        std::vector<VkFence> m_inFlightFences;
     };
 }
 
