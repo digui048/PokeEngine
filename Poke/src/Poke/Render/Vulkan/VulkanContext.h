@@ -10,6 +10,7 @@
 #include "VulkanPipeline.h"
 #include "VulkanRenderPass.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanCommands.h"
 
 namespace Poke
 {
@@ -36,6 +37,7 @@ namespace Poke
         VulkanRenderPass m_renderPass;
         VulkanPipeline m_pipeline;
         VulkanFramebuffer m_framebuffer;
+        VulkanCommands m_commands;
     };
 }
 

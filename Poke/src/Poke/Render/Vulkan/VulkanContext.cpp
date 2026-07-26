@@ -20,10 +20,12 @@ void VulkanContext::Init(Window &window)
     m_renderPass.Init(m_device, m_swapchain);
     m_pipeline.Init(m_device, m_swapchain, m_renderPass, "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.vert.spv", "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.frag.spv");
     m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
+    m_commands.Init(m_device, m_physicalDevice);
 }
 
 void VulkanContext::Shutdown()
 {
+    m_commands.Shutdown(m_device);
     m_framebuffer.Shutdown(m_device);
     m_pipeline.Shutdown(m_device);
     m_renderPass.Shutdown(m_device);
