@@ -51,7 +51,9 @@ void Application::Run()
 
         PollEvents();
 
-        //Renderer::Clear();
+        Renderer::BeginFrame();
+        Renderer::DrawTriangle();
+        Renderer::EndFrame();
 
         OnUpdate(Time::DeltaTime());
 
@@ -75,6 +77,7 @@ void Application::Run()
     ClearModules();
     OnShutdown();
 
+    Renderer::WaitIdle();
     Renderer::Shutdown();
 
     //m_imguiManager.reset();

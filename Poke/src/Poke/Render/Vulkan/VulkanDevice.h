@@ -22,7 +22,8 @@ namespace Poke
             VkDevice GetHandle() const { return m_device; }
 
             VkQueue GetGraphicsQueue() const { return m_graphicsQueue; }
-        
+            VkQueue GetPresentQueue() const { return m_presentQueue; }
+
         private:
             void CreateLogicalDevice(VulkanInstance& instance, VulkanPhysicalDevice& physicalDevice);
 

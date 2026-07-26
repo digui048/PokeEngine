@@ -16,13 +16,16 @@ namespace Poke
     public:
         static void Init(Window& window);
         static void Shutdown();
-        static void Clear();
-        static void SetClearColor(const float r, const float g, const float b, const float a);
-        static void SetViewport(const int x1, const int x2, const int width, const int height);
-        static void DrawIndexed(const VertexArray &vertexArray, const Shader &shader);
+        static void WaitIdle();
 
+        static void BeginFrame();
+        static void EndFrame();
+        static void DrawTriangle();
+
+        static void SetClearColor(const float r, const float g, const float b, const float a);
     private:
         static std::unique_ptr<VulkanContext> s_Context;
+        static struct ClearColor { float r, g, b, a; } s_ClearColor;
     };
 }
 

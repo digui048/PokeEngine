@@ -14,37 +14,43 @@
 using namespace Poke;
 
 std::unique_ptr<Poke::VulkanContext> Poke::Renderer::s_Context = nullptr;
+Renderer::ClearColor Renderer::s_ClearColor = {0.1f, 0.1f, 0.1f, 1.0f};
 
-void Renderer::Init(Window& window)
+void Renderer::Init(Window &window)
 {
     s_Context = std::make_unique<VulkanContext>();
     s_Context->Init(window);
 }
 
-void Poke::Renderer::Shutdown()
+void Renderer::Shutdown()
 {
     s_Context.reset();
 }
 
-void Renderer::Clear()
+void Renderer::WaitIdle()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (s_Context)
+    {
+        vkDeviceWaitIdle(s_Context->GetDevice().GetHandle());
+    }
+}
+
+void Renderer::BeginFrame()
+{
+    s_Context->BeginFrame(s_ClearColor.r, s_ClearColor.g, s_ClearColor.b, s_ClearColor.a);
+}
+
+void Renderer::EndFrame()
+{
+    s_Context->EndFrame();
+}
+
+void Renderer::DrawTriangle()
+{
+    s_Context->DrawTriangle();
 }
 
 void Renderer::SetClearColor(const float r, const float g, const float b, const float a)
 {
-    glClearColor(r, g, b, a);
-}
-
-void Renderer::SetViewport(const int x1, const int x2, const int width, const int height)
-{
-    glViewport(x1, x2, width, height);
-}
-
-void Poke::Renderer::DrawIndexed(const VertexArray &vertexArray, const Shader &shader)
-{
-    vertexArray.Bind();
-    shader.Bind();
-
-    glDrawElements(GL_TRIANGLES, vertexArray.GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+    s_ClearColor = {r, g, b, a};
 }
