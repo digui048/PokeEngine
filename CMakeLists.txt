@@ -4,12 +4,14 @@ project("PokeEngineWorkspace" VERSION 0.1.0 LANGUAGES C CXX)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND UNIX)
     add_compile_options(
-        -fsanitize=address,undefined
-        -fno-omit-frame-pointer
+        # -fsanitize=address,undefined
+        # -fno-omit-frame-pointer
+        # -g
+        # -O0
     )
 
     add_link_options(
-        -fsanitize=address,undefined
+        # -fsanitize=address,undefined
     )
 endif()
 

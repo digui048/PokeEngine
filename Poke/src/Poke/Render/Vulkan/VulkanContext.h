@@ -7,6 +7,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSurface.h"
 #include "VulkanSwapchain.h"
+#include "VulkanPipeline.h"
 
 namespace Poke
 {
@@ -30,6 +31,7 @@ namespace Poke
         VulkanDevice m_device;
         VulkanSurface m_surface;
         VulkanSwapchain m_swapchain;
+        VulkanPipeline m_pipeline;
     };
 }
 

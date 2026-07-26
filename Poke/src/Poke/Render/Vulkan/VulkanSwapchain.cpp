@@ -62,7 +62,7 @@ void VulkanSwapchain::Init(VulkanDevice &device, VulkanPhysicalDevice &physicalD
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(device.GetHandle(), &createInfo, nullptr, &m_swapchain))
+    if (vkCreateSwapchainKHR(device.GetHandle(), &createInfo, nullptr, &m_swapchain) != VK_SUCCESS)
     {
         POKE_CORE_CRITICAL("Failed to create swap chain");
     }
