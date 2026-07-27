@@ -18,9 +18,11 @@ namespace Poke
         static void Shutdown();
         static void WaitIdle();
 
-        static void BeginFrame();
-        static void EndFrame();
+        static bool BeginFrame(Window& window);
+        static void EndFrame(Window& window);
         static void DrawTriangle();
+
+        static void FrameResized();
 
         static void SetClearColor(const float r, const float g, const float b, const float a);
     private:

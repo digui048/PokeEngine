@@ -35,19 +35,24 @@ void Renderer::WaitIdle()
     }
 }
 
-void Renderer::BeginFrame()
+bool Renderer::BeginFrame(Window& window)
 {
-    s_Context->BeginFrame(s_ClearColor.r, s_ClearColor.g, s_ClearColor.b, s_ClearColor.a);
+    return s_Context->BeginFrame(window, s_ClearColor.r, s_ClearColor.g, s_ClearColor.b, s_ClearColor.a) != VK_NULL_HANDLE;
 }
 
-void Renderer::EndFrame()
+void Renderer::EndFrame(Window& window)
 {
-    s_Context->EndFrame();
+    s_Context->EndFrame(window);
 }
 
 void Renderer::DrawTriangle()
 {
     s_Context->DrawTriangle();
+}
+
+void Renderer::FrameResized()
+{
+    s_Context->FlagFramebufferResized();
 }
 
 void Renderer::SetClearColor(const float r, const float g, const float b, const float a)

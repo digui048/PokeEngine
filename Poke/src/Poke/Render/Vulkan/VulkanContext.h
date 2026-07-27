@@ -26,13 +26,18 @@ namespace Poke
         void Init(Window &window);
         void Shutdown();
 
-        VkCommandBuffer BeginFrame(float r, float g, float b, float a);
-        void EndFrame();
+        VkCommandBuffer BeginFrame(Window& window, float r, float g, float b, float a);
+        void EndFrame(Window& window);
 
         void DrawTriangle();
 
+        void FlagFramebufferResized() { m_framebufferResized = true; }
+        
         VulkanInstance &GetInstance() { return m_instance; }
         VulkanDevice &GetDevice() { return m_device; }
+
+    private:
+        void RecreateSwapchain(Window& window);
 
     private:
         VulkanInstance m_instance;
@@ -49,6 +54,7 @@ namespace Poke
     private:
         uint32_t m_currentImageIndex = 0;
         uint32_t m_currentFrame = 0;
+        bool m_framebufferResized = false;
     };
 }
 

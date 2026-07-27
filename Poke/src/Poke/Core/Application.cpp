@@ -27,7 +27,7 @@ Application::Application()
 
     Renderer::Init(*m_window);
 
-    //m_imguiManager = std::make_unique<ImGuiManager>();
+    // m_imguiManager = std::make_unique<ImGuiManager>();
 }
 
 Application::~Application() = default;
@@ -39,11 +39,11 @@ Application &Application::GetInstance()
 
 void Application::Run()
 {
-    //m_imguiManager->Init();
+    // m_imguiManager->Init();
 
     OnInit();
 
-    //Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+    // Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
     while (m_Running)
     {
@@ -51,9 +51,11 @@ void Application::Run()
 
         PollEvents();
 
-        Renderer::BeginFrame();
-        Renderer::DrawTriangle();
-        Renderer::EndFrame();
+        if (Renderer::BeginFrame(*m_window))
+        {
+            Renderer::DrawTriangle();
+            Renderer::EndFrame(*m_window);
+        }
 
         OnUpdate(Time::DeltaTime());
 
@@ -62,16 +64,14 @@ void Application::Run()
             module->OnUpdate(Time::DeltaTime());
         }
 
-        //m_imguiManager->BeginFrame();
+        // m_imguiManager->BeginFrame();
 
         for (auto &module : m_modules)
         {
             module->OnImGuiRender();
         }
 
-        //m_imguiManager->EndFrame();
-
-        m_window->SwapWindow();
+        // m_imguiManager->EndFrame();
     }
 
     ClearModules();
@@ -80,7 +80,7 @@ void Application::Run()
     Renderer::WaitIdle();
     Renderer::Shutdown();
 
-    //m_imguiManager.reset();
+    // m_imguiManager.reset();
     m_window.reset();
 
     POKE_CORE_INFO("Engine shutdown");
@@ -112,7 +112,7 @@ void Application::PollEvents()
 
     while (SDL_PollEvent(&sdlEvent))
     {
-        //ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
+        // ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
 
         switch (sdlEvent.type)
         {
@@ -121,10 +121,9 @@ void Application::PollEvents()
             break;
 
         case SDL_EVENT_WINDOW_RESIZED:
-            int w, h;
-            m_window->GetWindowSize(w, h);
-            //glViewport(0, 0, w, h);
-            
+            Renderer::FrameResized();
+            break;
+
         default:
             break;
         }

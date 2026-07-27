@@ -40,14 +40,25 @@ void VulkanContext::Shutdown()
     m_instance.Shutdown();
 }
 
-VkCommandBuffer VulkanContext::BeginFrame(float r, float g, float b, float a)
+VkCommandBuffer VulkanContext::BeginFrame(Window &window, float r, float g, float b, float a)
 {
     VkDevice device = m_device.GetHandle();
     VkFence inFlightFence = m_sync.GetInFlightFence(m_currentFrame);
 
     vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-    
-    vkAcquireNextImageKHR(device, m_swapchain.GetHandle(), UINT64_MAX, m_sync.GetImageAvailableSemaphore(m_currentFrame), VK_NULL_HANDLE, &m_currentImageIndex);
+
+    VkResult result = vkAcquireNextImageKHR(device, m_swapchain.GetHandle(), UINT64_MAX, m_sync.GetImageAvailableSemaphore(m_currentFrame), VK_NULL_HANDLE, &m_currentImageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        RecreateSwapchain(window);
+        return VK_NULL_HANDLE;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    {
+        POKE_CORE_ERROR("[Vulkan] Failed to aquire swap chain image");
+        return VK_NULL_HANDLE;
+    }
 
     vkResetFences(device, 1, &inFlightFence);
 
@@ -74,7 +85,7 @@ VkCommandBuffer VulkanContext::BeginFrame(float r, float g, float b, float a)
     return cmd;
 }
 
-void VulkanContext::EndFrame()
+void VulkanContext::EndFrame(Window &window)
 {
     VkCommandBuffer cmd = m_commands.GetCommandBuffer(m_currentFrame);
     VkFence inFlightFence = m_sync.GetInFlightFence(m_currentFrame);
@@ -117,8 +128,18 @@ void VulkanContext::EndFrame()
     presentInfo.pSwapchains = swapchains;
     presentInfo.pImageIndices = &m_currentImageIndex;
 
-    vkQueuePresentKHR(m_device.GetPresentQueue(), &presentInfo);
-    
+    VkResult result = vkQueuePresentKHR(m_device.GetPresentQueue(), &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized)
+    {
+        m_framebufferResized = false;
+        RecreateSwapchain(window);
+    }
+    else if (result != VK_SUCCESS)
+    {
+        POKE_CORE_ERROR("[Vulkan] Failed to present swap chain image");
+    }
+
     m_currentFrame = (m_currentFrame + 1) % VulkanSync::MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -142,4 +163,15 @@ void VulkanContext::DrawTriangle()
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     vkCmdDraw(cmd, 3, 1, 0, 0);
+}
+
+void VulkanContext::RecreateSwapchain(Window &window)
+{
+    vkDeviceWaitIdle(m_device.GetHandle());
+
+    m_swapchain.Shutdown(m_device);
+    m_framebuffer.Shutdown(m_device);
+
+    m_swapchain.Init(m_device, m_physicalDevice, m_surface, window);
+    m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
 }
