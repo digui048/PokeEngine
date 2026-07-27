@@ -5,10 +5,7 @@
 
 namespace Poke
 {
-    class VertexArray;
-    class Shader;
     class VulkanContext;
-
     class Window;
 
     class Renderer

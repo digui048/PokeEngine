@@ -8,11 +8,6 @@
 
 namespace Poke
 {
-    class VertexArray;
-    class VertexBuffer;
-    class IndexBuffer;
-    class Shader;
-    class Mesh;
     class EditorInterface;
 
     class EditorModule : public Module

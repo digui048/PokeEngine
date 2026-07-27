@@ -7,8 +7,6 @@
 
 #include "Poke/Render/Renderer.h"
 
-#include <glad/glad.h>
-
 using namespace Poke;
 
 Application *Application::s_Instance = nullptr;
@@ -43,7 +41,7 @@ void Application::Run()
 
     OnInit();
 
-    // Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+    Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
     while (m_Running)
     {

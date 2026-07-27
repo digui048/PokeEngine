@@ -2,20 +2,11 @@
 
 #include "Poke/Core/Time.h"
 
-#include "Poke/Render/Shader.h"
-#include "Poke/Render/VertexArray.h"
-#include "Poke/Render/VertexArray.h"
-#include "Poke/Render/VertexBuffer.h"
-#include "Poke/Render/IndexBuffer.h"
 #include "Poke/Render/Renderer.h"
 
 #include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
 #include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
 
-#include "Poke/Importer/MeshImporter.h"
-#include "Poke/Resources/Mesh.h"
-
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 

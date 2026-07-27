@@ -1,12 +1,8 @@
 #include "Renderer.h"
-#include "VertexArray.h"
-#include "IndexBuffer.h"
-#include "Shader.h"
 
 #include "Poke/Core/Assert.h"
 #include "Poke/Core/Window.h"
 
-#include <glad/glad.h>
 #include <SDL3/SDL.h>
 
 #include "Poke/Render/Vulkan/VulkanContext.h"
