@@ -31,9 +31,9 @@ void Renderer::WaitIdle()
     }
 }
 
-bool Renderer::BeginFrame(Window& window)
+VkCommandBuffer Renderer::BeginFrame(Window& window)
 {
-    return s_Context->BeginFrame(window, s_ClearColor.r, s_ClearColor.g, s_ClearColor.b, s_ClearColor.a) != VK_NULL_HANDLE;
+    return s_Context->BeginFrame(window, s_ClearColor.r, s_ClearColor.g, s_ClearColor.b, s_ClearColor.a);
 }
 
 void Renderer::EndFrame(Window& window)

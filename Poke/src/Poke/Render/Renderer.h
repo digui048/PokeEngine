@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <memory>
+#include <vulkan/vulkan.h>
 
 namespace Poke
 {
@@ -11,20 +12,26 @@ namespace Poke
     class Renderer
     {
     public:
-        static void Init(Window& window);
+        static void Init(Window &window);
         static void Shutdown();
         static void WaitIdle();
 
-        static bool BeginFrame(Window& window);
-        static void EndFrame(Window& window);
+        static VkCommandBuffer BeginFrame(Window &window);
+        static void EndFrame(Window &window);
         static void DrawTriangle();
 
         static void FrameResized();
 
         static void SetClearColor(const float r, const float g, const float b, const float a);
+
+        static VulkanContext& GetContext() { return *s_Context; }
+
     private:
         static std::unique_ptr<VulkanContext> s_Context;
-        static struct ClearColor { float r, g, b, a; } s_ClearColor;
+        static struct ClearColor
+        {
+            float r, g, b, a;
+        } s_ClearColor;
     };
 }
 

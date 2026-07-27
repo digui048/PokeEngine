@@ -170,5 +170,5 @@ void VulkanSwapchain::CreateImageViews(VkDevice logicalDevice)
         }
     }
 
-    POKE_CORE_INFO("Swapchain Image Views created successfully");
+    POKE_CORE_INFO("[Vulkan] Swapchain Image Views created successfully");
 }

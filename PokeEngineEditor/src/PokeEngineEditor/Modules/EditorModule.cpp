@@ -21,8 +21,8 @@ EditorModule::~EditorModule() = default;
 
 void EditorModule::OnInit()
 {
-    //AddInterface<HierarchyInterface>();
-    //AddInterface<MainMenuBarInterface>();
+    AddInterface<HierarchyInterface>();
+    AddInterface<MainMenuBarInterface>();
 }
 
 void EditorModule::OnUpdate(float dt)

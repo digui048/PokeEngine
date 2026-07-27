@@ -7,6 +7,8 @@
 
 #include "Poke/Render/Renderer.h"
 
+#include "imgui_impl_sdl3.h"
+
 using namespace Poke;
 
 Application *Application::s_Instance = nullptr;
@@ -25,7 +27,7 @@ Application::Application()
 
     Renderer::Init(*m_window);
 
-    // m_imguiManager = std::make_unique<ImGuiManager>();
+    m_imguiManager = std::make_unique<ImGuiManager>();
 }
 
 Application::~Application() = default;
@@ -37,7 +39,7 @@ Application &Application::GetInstance()
 
 void Application::Run()
 {
-    // m_imguiManager->Init();
+    m_imguiManager->Init(*m_window);
 
     OnInit();
 
@@ -49,9 +51,20 @@ void Application::Run()
 
         PollEvents();
 
-        if (Renderer::BeginFrame(*m_window))
+        VkCommandBuffer cmd = Renderer::BeginFrame(*m_window);
+        if (cmd != VK_NULL_HANDLE)
         {
             Renderer::DrawTriangle();
+
+            m_imguiManager->BeginFrame();
+
+            for (auto &module : m_modules)
+            {
+                module->OnImGuiRender();
+            }
+
+            m_imguiManager->EndFrame(cmd);
+
             Renderer::EndFrame(*m_window);
         }
 
@@ -61,24 +74,16 @@ void Application::Run()
         {
             module->OnUpdate(Time::DeltaTime());
         }
-
-        // m_imguiManager->BeginFrame();
-
-        for (auto &module : m_modules)
-        {
-            module->OnImGuiRender();
-        }
-
-        // m_imguiManager->EndFrame();
     }
 
     ClearModules();
     OnShutdown();
 
     Renderer::WaitIdle();
+
+    m_imguiManager.reset();
     Renderer::Shutdown();
 
-    // m_imguiManager.reset();
     m_window.reset();
 
     POKE_CORE_INFO("Engine shutdown");
@@ -110,7 +115,7 @@ void Application::PollEvents()
 
     while (SDL_PollEvent(&sdlEvent))
     {
-        // ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
+        ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
 
         switch (sdlEvent.type)
         {
@@ -119,6 +124,7 @@ void Application::PollEvents()
             break;
 
         case SDL_EVENT_WINDOW_RESIZED:
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             Renderer::FrameResized();
             break;
 

@@ -21,7 +21,7 @@ void VulkanPhysicalDevice::Init(VulkanInstance &instance, VulkanSurface &surface
     vkGetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
     vkGetPhysicalDeviceFeatures(m_physicalDevice, &m_features);
 
-    POKE_CORE_INFO("Selected GPU: {0}", m_properties.deviceName);
+    POKE_CORE_INFO("[Vulkan] Selected GPU: {0}", m_properties.deviceName);
 }
 
 void VulkanPhysicalDevice::Shutdown()

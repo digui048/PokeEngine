@@ -34,7 +34,10 @@ namespace Poke
         void FlagFramebufferResized() { m_framebufferResized = true; }
         
         VulkanInstance &GetInstance() { return m_instance; }
+        VulkanPhysicalDevice &GetPhysicalDevice() { return m_physicalDevice; }
         VulkanDevice &GetDevice() { return m_device; }
+        VulkanSwapchain &GetSwapchain() { return m_swapchain; }
+        VulkanRenderPass &GetRenderPass() { return m_renderPass; }
 
     private:
         void RecreateSwapchain(Window& window);
