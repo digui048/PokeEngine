@@ -17,7 +17,7 @@ namespace Poke
         VulkanSwapchain() = default;
         ~VulkanSwapchain();
 
-        void Init(VulkanDevice &device, VulkanPhysicalDevice &physicalDevice, VulkanSurface &surface, Window &window);
+        void Init(VulkanDevice &device, VulkanPhysicalDevice &physicalDevice, VulkanSurface &surface, Window &window, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
         void Shutdown(VulkanDevice &device);
 
         VkSwapchainKHR GetHandle() const { return m_swapchain; }

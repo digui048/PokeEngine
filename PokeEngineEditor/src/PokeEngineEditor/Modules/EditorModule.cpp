@@ -7,13 +7,6 @@
 #include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
 #include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <imgui.h>
-
-#include <vulkan/vulkan.h>
-
 using namespace Poke;
 
 EditorModule::EditorModule() = default;

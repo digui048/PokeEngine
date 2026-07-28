@@ -169,9 +169,9 @@ void VulkanContext::RecreateSwapchain(Window &window)
 {
     vkDeviceWaitIdle(m_device.GetHandle());
 
-    m_swapchain.Shutdown(m_device);
     m_framebuffer.Shutdown(m_device);
 
-    m_swapchain.Init(m_device, m_physicalDevice, m_surface, window);
+    VkSwapchainKHR oldSwapchain = m_swapchain.GetHandle();
+    m_swapchain.Init(m_device, m_physicalDevice, m_surface, window, oldSwapchain);
     m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
 }

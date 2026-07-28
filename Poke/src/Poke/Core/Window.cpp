@@ -9,7 +9,7 @@ using namespace Poke;
 
 Window::Window(std::string name, int width, int height)
 {
-    //SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "x11, wayland");
+    SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland, x11");
 
     POKE_ASSERT(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0, "Failed to initialise SDL: {}", SDL_GetError());
     POKE_CORE_INFO("SDL initialized successfully");
@@ -35,7 +35,7 @@ Window::~Window()
 void Window::GetWindowSize(int &w, int &h)
 {
     int width, height;
-    SDL_GetWindowSize(m_window, &width, &height);
+    SDL_GetWindowSizeInPixels(m_window, &width, &height);
 
     w = width;
     h = height;

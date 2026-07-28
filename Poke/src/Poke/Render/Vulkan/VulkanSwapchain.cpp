@@ -17,8 +17,14 @@ VulkanSwapchain::~VulkanSwapchain()
 {
 }
 
-void VulkanSwapchain::Init(VulkanDevice &device, VulkanPhysicalDevice &physicalDevice, VulkanSurface &surface, Window &window)
+void VulkanSwapchain::Init(VulkanDevice &device, VulkanPhysicalDevice &physicalDevice, VulkanSurface &surface, Window &window, VkSwapchainKHR oldSwapchain)
 {
+    for (auto imageView : m_imageViews)
+    {
+        vkDestroyImageView(device.GetHandle(), imageView, nullptr);
+    }
+    m_imageViews.clear();
+
     SwapChainSupportDetails swapChainSupport = physicalDevice.QuerySwapChainSupport(physicalDevice.GetHandle(), surface);
 
     VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
@@ -60,12 +66,20 @@ void VulkanSwapchain::Init(VulkanDevice &device, VulkanPhysicalDevice &physicalD
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    if (vkCreateSwapchainKHR(device.GetHandle(), &createInfo, nullptr, &m_swapchain) != VK_SUCCESS)
+    createInfo.oldSwapchain = oldSwapchain;
+
+    VkSwapchainKHR newSwapchain = VK_NULL_HANDLE;
+    if (vkCreateSwapchainKHR(device.GetHandle(), &createInfo, nullptr, &newSwapchain) != VK_SUCCESS)
     {
         POKE_CORE_CRITICAL("Failed to create swap chain");
     }
+    if (oldSwapchain != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(device.GetHandle(), oldSwapchain, nullptr);
+    }
+
+    m_swapchain = newSwapchain;
 
     vkGetSwapchainImagesKHR(device.GetHandle(), m_swapchain, &imageCount, nullptr);
     m_images.resize(imageCount);
@@ -111,11 +125,12 @@ VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPres
 {
     for (const auto &availablePresentMode : availablePresentModes)
     {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
         {
             return availablePresentMode;
         }
     }
+    
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -144,7 +159,7 @@ void VulkanSwapchain::CreateImageViews(VkDevice logicalDevice)
 {
     m_imageViews.resize(m_images.size());
 
-    for(size_t i = 0; i < m_images.size(); ++i)
+    for (size_t i = 0; i < m_images.size(); ++i)
     {
         VkImageViewCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -157,7 +172,7 @@ void VulkanSwapchain::CreateImageViews(VkDevice logicalDevice)
         createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
         createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        
+
         createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         createInfo.subresourceRange.baseMipLevel = 0;
         createInfo.subresourceRange.levelCount = 1;

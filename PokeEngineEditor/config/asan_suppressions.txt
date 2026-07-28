@@ -1,3 +1,2 @@
-leak:X11_InitKeyboard
-leak:X11_GetGlobalContentScale
+leak:libfontconfig.so
 leak:libdbus-1
