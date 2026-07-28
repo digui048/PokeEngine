@@ -1,2 +1,5 @@
 leak:libfontconfig.so
 leak:libdbus-1
+leak:libdecor
+leak:libwayland-client.so
+leak:libdecor-gtk.so

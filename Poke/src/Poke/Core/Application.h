@@ -9,6 +9,7 @@ namespace Poke
     class Window;
     class ImGuiManager;
     class Module;
+    class VertexBuffer;
 
     class Application
     {
@@ -42,6 +43,8 @@ namespace Poke
         bool m_Running = true;
 
         std::vector<std::shared_ptr<Module>> m_modules;
+
+        std::unique_ptr<VertexBuffer> m_vertexBuffer;
     };
 }
 

@@ -18,7 +18,7 @@ namespace Poke
 
         static VkCommandBuffer BeginFrame(Window &window);
         static void EndFrame(Window &window);
-        static void DrawTriangle();
+        static void BindPipeline(VkCommandBuffer cmdBuffer);
 
         static void FrameResized();
 

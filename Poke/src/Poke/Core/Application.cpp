@@ -6,6 +6,7 @@
 #include "Module.h"
 
 #include "Poke/Render/Renderer.h"
+#include "Poke/Render/VertexBuffer.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -43,6 +44,12 @@ void Application::Run()
 
     OnInit();
 
+    std::vector<Poke::Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
+
     Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
     while (m_Running)
@@ -54,7 +61,11 @@ void Application::Run()
         VkCommandBuffer cmd = Renderer::BeginFrame(*m_window);
         if (cmd != VK_NULL_HANDLE)
         {
-            Renderer::DrawTriangle();
+            Renderer::BindPipeline(cmd);
+
+            m_vertexBuffer->Bind(cmd);
+
+            vkCmdDraw(cmd, m_vertexBuffer->GetVertexCount(), 1, 0, 0);
 
             m_imguiManager->BeginFrame();
 
@@ -80,6 +91,8 @@ void Application::Run()
     OnShutdown();
 
     Renderer::WaitIdle();
+
+    m_vertexBuffer.reset();
 
     m_imguiManager.reset();
     Renderer::Shutdown();

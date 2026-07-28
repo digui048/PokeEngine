@@ -82,6 +82,20 @@ VkCommandBuffer VulkanContext::BeginFrame(Window &window, float r, float g, floa
 
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(m_swapchain.GetExtent().width);
+    viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = m_swapchain.GetExtent();
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
     return cmd;
 }
 
@@ -143,26 +157,25 @@ void VulkanContext::EndFrame(Window &window)
     m_currentFrame = (m_currentFrame + 1) % VulkanSync::MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanContext::DrawTriangle()
+void VulkanContext::BindPipeline(VkCommandBuffer cmdBuffer)
 {
-    VkCommandBuffer cmd = m_commands.GetCommandBuffer(m_currentFrame);
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
 
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(m_swapchain.GetExtent().width);
-    viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    // VkViewport viewport{};
+    // viewport.x = 0.0f;
+    // viewport.y = 0.0f;
+    // viewport.width = static_cast<float>(m_swapchain.GetExtent().width);
+    // viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
+    // viewport.minDepth = 0.0f;
+    // viewport.maxDepth = 1.0f;
+    // vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = m_swapchain.GetExtent();
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    // VkRect2D scissor{};
+    // scissor.offset = {0, 0};
+    // scissor.extent = m_swapchain.GetExtent();
+    // vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-    vkCmdDraw(cmd, 3, 1, 0, 0);
+    // vkCmdDraw(cmd, 3, 1, 0, 0);
 }
 
 void VulkanContext::RecreateSwapchain(Window &window)

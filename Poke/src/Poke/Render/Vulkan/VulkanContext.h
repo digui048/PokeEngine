@@ -29,7 +29,7 @@ namespace Poke
         VkCommandBuffer BeginFrame(Window& window, float r, float g, float b, float a);
         void EndFrame(Window& window);
 
-        void DrawTriangle();
+        void BindPipeline(VkCommandBuffer cmdBuffer);
 
         void FlagFramebufferResized() { m_framebufferResized = true; }
         

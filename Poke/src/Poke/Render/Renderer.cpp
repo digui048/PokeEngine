@@ -41,9 +41,9 @@ void Renderer::EndFrame(Window& window)
     s_Context->EndFrame(window);
 }
 
-void Renderer::DrawTriangle()
+void Renderer::BindPipeline(VkCommandBuffer cmdBuffer)
 {
-    s_Context->DrawTriangle();
+    s_Context->BindPipeline(cmdBuffer);
 }
 
 void Renderer::FrameResized()
