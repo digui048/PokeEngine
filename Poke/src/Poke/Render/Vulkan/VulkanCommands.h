@@ -19,6 +19,7 @@ namespace Poke
         void Shutdown(VulkanDevice &device);
 
         VkCommandBuffer GetCommandBuffer(uint32_t frameIndex) const { return m_commandBuffers[frameIndex]; }
+        VkCommandPool GetCommandPool() const { return m_commandPool; }
 
     private:
         VkCommandPool m_commandPool = VK_NULL_HANDLE;

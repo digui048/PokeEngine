@@ -33,6 +33,9 @@ namespace Poke
 
         void FlagFramebufferResized() { m_framebufferResized = true; }
         
+        VkCommandBuffer BeginSingleTimeCommands();
+        void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
         VulkanInstance &GetInstance() { return m_instance; }
         VulkanPhysicalDevice &GetPhysicalDevice() { return m_physicalDevice; }
         VulkanDevice &GetDevice() { return m_device; }

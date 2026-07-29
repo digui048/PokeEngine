@@ -160,22 +160,41 @@ void VulkanContext::EndFrame(Window &window)
 void VulkanContext::BindPipeline(VkCommandBuffer cmdBuffer)
 {
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
+}
 
-    // VkViewport viewport{};
-    // viewport.x = 0.0f;
-    // viewport.y = 0.0f;
-    // viewport.width = static_cast<float>(m_swapchain.GetExtent().width);
-    // viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
-    // viewport.minDepth = 0.0f;
-    // viewport.maxDepth = 1.0f;
-    // vkCmdSetViewport(cmd, 0, 1, &viewport);
+VkCommandBuffer VulkanContext::BeginSingleTimeCommands()
+{
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = m_commands.GetCommandPool();
+    allocInfo.commandBufferCount = 1;
 
-    // VkRect2D scissor{};
-    // scissor.offset = {0, 0};
-    // scissor.extent = m_swapchain.GetExtent();
-    // vkCmdSetScissor(cmd, 0, 1, &scissor);
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(m_device.GetHandle(), &allocInfo, &commandBuffer);
 
-    // vkCmdDraw(cmd, 3, 1, 0, 0);
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void VulkanContext::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(m_device.GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_device.GetGraphicsQueue());
+
+    vkFreeCommandBuffers(m_device.GetHandle(), m_commands.GetCommandPool(), 1, &commandBuffer);
 }
 
 void VulkanContext::RecreateSwapchain(Window &window)
