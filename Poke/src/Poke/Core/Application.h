@@ -10,6 +10,7 @@ namespace Poke
     class ImGuiManager;
     class Module;
     class VertexBuffer;
+    class IndexBuffer;
 
     class Application
     {
@@ -45,6 +46,7 @@ namespace Poke
         std::vector<std::shared_ptr<Module>> m_modules;
 
         std::unique_ptr<VertexBuffer> m_vertexBuffer;
+        std::unique_ptr<IndexBuffer> m_indexBuffer;
     };
 }
 
