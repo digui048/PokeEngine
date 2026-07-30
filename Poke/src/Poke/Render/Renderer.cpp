@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 
 #include "Poke/Render/Vulkan/VulkanContext.h"
+#include "Poke/Render/UniformBuffer.h"
 
 using namespace Poke;
 
@@ -46,6 +47,16 @@ void Renderer::BindPipeline(VkCommandBuffer cmdBuffer)
     s_Context->BindPipeline(cmdBuffer);
 }
 
+void Renderer::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame)
+{
+    s_Context->BindPipelineDescriptors(cmdBuffer, currentFrame);
+}
+
+void Renderer::SetupDescriptors(const UniformBuffer *ubo)
+{
+    s_Context->SetupDescriptorsPipeline(ubo);
+}
+
 void Renderer::FrameResized()
 {
     s_Context->FlagFramebufferResized();
@@ -54,4 +65,9 @@ void Renderer::FrameResized()
 void Renderer::SetClearColor(const float r, const float g, const float b, const float a)
 {
     s_ClearColor = {r, g, b, a};
+}
+
+uint32_t Renderer::GetCurrentFrame()
+{
+    return GetContext().GetCurrentFrame();
 }

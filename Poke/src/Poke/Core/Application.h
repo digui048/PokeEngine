@@ -11,6 +11,7 @@ namespace Poke
     class Module;
     class VertexBuffer;
     class IndexBuffer;
+    class UniformBuffer;
 
     class Application
     {
@@ -47,6 +48,7 @@ namespace Poke
 
         std::unique_ptr<VertexBuffer> m_vertexBuffer;
         std::unique_ptr<IndexBuffer> m_indexBuffer;
+        std::unique_ptr<UniformBuffer> m_uniformBuffer;
     };
 }
 

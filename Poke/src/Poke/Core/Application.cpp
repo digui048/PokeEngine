@@ -8,6 +8,7 @@
 #include "Poke/Render/Renderer.h"
 #include "Poke/Render/VertexBuffer.h"
 #include "Poke/Render/IndexBuffer.h"
+#include "Poke/Render/UniformBuffer.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -49,15 +50,16 @@ void Application::Run()
         {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
         {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
         {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-    };
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
     const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0
-    };
+        0, 1, 2, 2, 3, 0};
 
     m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
     m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
+    m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
+
+    Renderer::SetupDescriptors(m_uniformBuffer.get());
 
     Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
@@ -67,10 +69,28 @@ void Application::Run()
 
         PollEvents();
 
+        static float time = 0.0f;
+        time += Time::DeltaTime();
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+        int w; 
+        int h;
+        m_window->GetWindowSize(w,h);
+        float aspect = static_cast<float>(w) / static_cast<float>(h);
+        ubo.proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
+        ubo.proj[1][1] *= -1;
+
+        m_uniformBuffer->SetData(&ubo);
+        
         VkCommandBuffer cmd = Renderer::BeginFrame(*m_window);
+        uint32_t currentFrame = Renderer::GetCurrentFrame();
         if (cmd != VK_NULL_HANDLE)
         {
             Renderer::BindPipeline(cmd);
+            Renderer::BindPipelineDescriptors(cmd, currentFrame);
 
             m_vertexBuffer->Bind(cmd);
             m_indexBuffer->Bind(cmd);
@@ -104,6 +124,7 @@ void Application::Run()
 
     m_vertexBuffer.reset();
     m_indexBuffer.reset();
+    m_uniformBuffer.reset();
 
     m_imguiManager.reset();
     Renderer::Shutdown();

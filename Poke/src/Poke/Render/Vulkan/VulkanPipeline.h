@@ -3,6 +3,9 @@
 
 #include <vulkan/vulkan.h>
 #include <string>
+#include <vector>
+
+#include "Poke/Render/UniformBuffer.h"
 
 namespace Poke
 {
@@ -22,9 +25,15 @@ namespace Poke
         VkPipeline GetPipeline() const { return m_pipeline; }
         VkPipelineLayout GetPipelineLayout() const { return m_pipelineLayout; }
 
+        void SetupDescriptors(const UniformBuffer* uniformBuffer);
+        void BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame);
+
     private:
         VkPipeline m_pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+        VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> m_descriptorSets;
     };
 }
 

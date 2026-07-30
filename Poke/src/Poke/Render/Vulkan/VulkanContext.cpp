@@ -162,6 +162,16 @@ void VulkanContext::BindPipeline(VkCommandBuffer cmdBuffer)
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
 }
 
+void VulkanContext::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame)
+{
+    m_pipeline.BindDescriptors(cmdBuffer, currentFrame);
+}
+
+void VulkanContext::SetupDescriptorsPipeline(const UniformBuffer* ubo)
+{
+    m_pipeline.SetupDescriptors(ubo);
+}
+
 VkCommandBuffer VulkanContext::BeginSingleTimeCommands()
 {
     VkCommandBufferAllocateInfo allocInfo{};

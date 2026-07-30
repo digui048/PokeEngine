@@ -13,6 +13,8 @@
 #include "VulkanCommands.h"
 #include "VulkanSync.h"
 
+#include "Poke/Render/UniformBuffer.h"
+
 namespace Poke
 {
     class Window;
@@ -30,6 +32,9 @@ namespace Poke
         void EndFrame(Window& window);
 
         void BindPipeline(VkCommandBuffer cmdBuffer);
+        void BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame);
+
+        void SetupDescriptorsPipeline(const UniformBuffer* ubo);
 
         void FlagFramebufferResized() { m_framebufferResized = true; }
         
@@ -41,6 +46,8 @@ namespace Poke
         VulkanDevice &GetDevice() { return m_device; }
         VulkanSwapchain &GetSwapchain() { return m_swapchain; }
         VulkanRenderPass &GetRenderPass() { return m_renderPass; }
+
+        uint32_t GetCurrentFrame() const { return m_currentFrame; }
 
     private:
         void RecreateSwapchain(Window& window);
@@ -57,6 +64,7 @@ namespace Poke
         VulkanFramebuffer m_framebuffer;
         VulkanCommands m_commands;
         VulkanSync m_sync;
+
     private:
         uint32_t m_currentImageIndex = 0;
         uint32_t m_currentFrame = 0;

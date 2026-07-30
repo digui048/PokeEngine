@@ -7,6 +7,7 @@
 namespace Poke
 {
     class VulkanContext;
+    class UniformBuffer;
     class Window;
 
     class Renderer
@@ -19,12 +20,15 @@ namespace Poke
         static VkCommandBuffer BeginFrame(Window &window);
         static void EndFrame(Window &window);
         static void BindPipeline(VkCommandBuffer cmdBuffer);
+        static void BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame);
+        static void SetupDescriptors(const UniformBuffer* ubo);
 
         static void FrameResized();
 
         static void SetClearColor(const float r, const float g, const float b, const float a);
 
         static VulkanContext& GetContext() { return *s_Context; }
+        static uint32_t GetCurrentFrame();
 
     private:
         static std::unique_ptr<VulkanContext> s_Context;
