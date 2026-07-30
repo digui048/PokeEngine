@@ -9,6 +9,7 @@
 #include "Poke/Render/VertexBuffer.h"
 #include "Poke/Render/IndexBuffer.h"
 #include "Poke/Render/UniformBuffer.h"
+#include "Poke/Render/Vulkan/VulkanPipeline.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -50,16 +51,18 @@ void Application::Run()
         {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
         {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
         {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
 
     const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0};
-
+        0, 1, 2, 2, 3, 0
+    };
+    
+    m_defaultPipeline = Renderer::CreatePipeline("/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.vert.spv", "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.frag.spv");
     m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
     m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
-
-    Renderer::SetupDescriptors(m_uniformBuffer.get());
+    m_defaultPipeline->SetupDescriptors(m_uniformBuffer.get());
 
     Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
@@ -86,11 +89,10 @@ void Application::Run()
         m_uniformBuffer->SetData(&ubo);
         
         VkCommandBuffer cmd = Renderer::BeginFrame(*m_window);
-        uint32_t currentFrame = Renderer::GetCurrentFrame();
         if (cmd != VK_NULL_HANDLE)
         {
-            Renderer::BindPipeline(cmd);
-            Renderer::BindPipelineDescriptors(cmd, currentFrame);
+            Renderer::BindPipeline(cmd, m_defaultPipeline);
+            Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
 
             m_vertexBuffer->Bind(cmd);
             m_indexBuffer->Bind(cmd);
@@ -125,6 +127,7 @@ void Application::Run()
     m_vertexBuffer.reset();
     m_indexBuffer.reset();
     m_uniformBuffer.reset();
+    m_defaultPipeline.reset();
 
     m_imguiManager.reset();
     Renderer::Shutdown();

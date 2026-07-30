@@ -2,13 +2,14 @@
 #define RENDERER_H
 
 #include <memory>
+#include <string>
 #include <vulkan/vulkan.h>
 
 namespace Poke
 {
     class VulkanContext;
-    class UniformBuffer;
     class Window;
+    class VulkanPipeline;
 
     class Renderer
     {
@@ -19,9 +20,11 @@ namespace Poke
 
         static VkCommandBuffer BeginFrame(Window &window);
         static void EndFrame(Window &window);
-        static void BindPipeline(VkCommandBuffer cmdBuffer);
-        static void BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame);
-        static void SetupDescriptors(const UniformBuffer* ubo);
+        
+        static std::shared_ptr<VulkanPipeline> CreatePipeline(const std::string& vertPath, const std::string& fragPath);
+
+        static void BindPipeline(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline);
+        static void BindPipelineDescriptors(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline);
 
         static void FrameResized();
 

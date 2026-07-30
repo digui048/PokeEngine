@@ -13,6 +13,11 @@
 
 using namespace Poke;
 
+VulkanPipeline::~VulkanPipeline()
+{
+    Shutdown(Renderer::GetContext().GetDevice());
+}
+
 void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath)
 {
     VkDevice logicalDevice = device.GetHandle();

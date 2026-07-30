@@ -17,7 +17,7 @@ namespace Poke
     {
     public:
         VulkanPipeline() = default;
-        ~VulkanPipeline() = default;
+        ~VulkanPipeline();
 
         void Init(VulkanDevice& device, VulkanSwapchain& swapchain, VulkanRenderPass &renderPass, const std::string& vertPath, const std::string& fragPath);
         void Shutdown(VulkanDevice& device);

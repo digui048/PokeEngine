@@ -6,7 +6,7 @@
 #include <SDL3/SDL.h>
 
 #include "Poke/Render/Vulkan/VulkanContext.h"
-#include "Poke/Render/UniformBuffer.h"
+#include "Poke/Render/Vulkan/VulkanPipeline.h"
 
 using namespace Poke;
 
@@ -42,19 +42,21 @@ void Renderer::EndFrame(Window& window)
     s_Context->EndFrame(window);
 }
 
-void Renderer::BindPipeline(VkCommandBuffer cmdBuffer)
+std::shared_ptr<VulkanPipeline> Renderer::CreatePipeline(const std::string &vertPath, const std::string &fragPath)
 {
-    s_Context->BindPipeline(cmdBuffer);
+    auto pipeline = std::make_shared<VulkanPipeline>();
+    pipeline->Init(s_Context->GetDevice(), s_Context->GetSwapchain(), s_Context->GetRenderPass(), vertPath, fragPath);
+    return pipeline;
 }
 
-void Renderer::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame)
+void Renderer::BindPipeline(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline)
 {
-    s_Context->BindPipelineDescriptors(cmdBuffer, currentFrame);
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetPipeline());
 }
 
-void Renderer::SetupDescriptors(const UniformBuffer *ubo)
+void Renderer::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline>& pipeline)
 {
-    s_Context->SetupDescriptorsPipeline(ubo);
+    pipeline->BindDescriptors(cmdBuffer, s_Context->GetCurrentFrame());
 }
 
 void Renderer::FrameResized()

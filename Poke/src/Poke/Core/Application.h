@@ -12,6 +12,7 @@ namespace Poke
     class VertexBuffer;
     class IndexBuffer;
     class UniformBuffer;
+    class VulkanPipeline;
 
     class Application
     {
@@ -49,6 +50,8 @@ namespace Poke
         std::unique_ptr<VertexBuffer> m_vertexBuffer;
         std::unique_ptr<IndexBuffer> m_indexBuffer;
         std::unique_ptr<UniformBuffer> m_uniformBuffer;
+
+        std::shared_ptr<VulkanPipeline> m_defaultPipeline;
     };
 }
 

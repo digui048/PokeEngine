@@ -19,7 +19,6 @@ void VulkanContext::Init(Window &window)
     m_device.Init(m_instance, m_physicalDevice);
     m_swapchain.Init(m_device, m_physicalDevice, m_surface, window);
     m_renderPass.Init(m_device, m_swapchain);
-    m_pipeline.Init(m_device, m_swapchain, m_renderPass, "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.vert.spv", "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.frag.spv");
     m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
     m_commands.Init(m_device, m_physicalDevice);
     m_sync.Init(m_device, m_swapchain);
@@ -30,7 +29,6 @@ void VulkanContext::Shutdown()
     m_sync.Shutdown(m_device);
     m_commands.Shutdown(m_device);
     m_framebuffer.Shutdown(m_device);
-    m_pipeline.Shutdown(m_device);
     m_renderPass.Shutdown(m_device);
     m_swapchain.Shutdown(m_device);
     m_device.Shutdown();
@@ -155,21 +153,6 @@ void VulkanContext::EndFrame(Window &window)
     }
 
     m_currentFrame = (m_currentFrame + 1) % VulkanSync::MAX_FRAMES_IN_FLIGHT;
-}
-
-void VulkanContext::BindPipeline(VkCommandBuffer cmdBuffer)
-{
-    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.GetPipeline());
-}
-
-void VulkanContext::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, uint32_t currentFrame)
-{
-    m_pipeline.BindDescriptors(cmdBuffer, currentFrame);
-}
-
-void VulkanContext::SetupDescriptorsPipeline(const UniformBuffer* ubo)
-{
-    m_pipeline.SetupDescriptors(ubo);
 }
 
 VkCommandBuffer VulkanContext::BeginSingleTimeCommands()
