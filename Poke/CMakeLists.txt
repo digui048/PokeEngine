@@ -40,7 +40,7 @@ if(GLSLC_EXECUTABLE AND EXISTS "${SHADERS_DIR}")
 
     foreach(SHADER_SRC ${SHADER_SOURCES})
         file(RELATIVE_PATH REL_PATH "${SHADERS_DIR}" "${SHADER_SRC}")
-        set(SPIRV_OUT "${OUTPUT_PATH}/assets/shaders/${REL_PATH}.spv")
+        set(SPIRV_OUT "${SHADERS_DIR}/${REL_PATH}.spv")
 
         get_filename_component(OUT_DIR "${SPIRV_OUT}" DIRECTORY)
 

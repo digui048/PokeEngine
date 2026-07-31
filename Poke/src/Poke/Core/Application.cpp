@@ -58,7 +58,7 @@ void Application::Run()
         0, 1, 2, 2, 3, 0
     };
     
-    m_defaultPipeline = Renderer::CreatePipeline("/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.vert.spv", "/home/digui048/PokeEngine/build/linux-debug/Poke/assets/shaders/defaultShader.frag.spv");
+    m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
     m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
     m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
