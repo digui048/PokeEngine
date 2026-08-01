@@ -12,6 +12,11 @@ find_package(Vulkan REQUIRED MODULE)
 find_package(glm REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(assimp REQUIRED)
+find_package(DevIL REQUIRED)
+find_package(PNG REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(TIFF REQUIRED)
+find_package(Jasper REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 add_library(PokeEngineCore ALIAS ${PROJECT_NAME})
@@ -26,6 +31,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Vulkan::Vulkan
     spdlog::spdlog
     assimp::assimp
+    DevIL::IL
+    DevIL::ILU
+    DevIL::ILUT
+    PNG::PNG
+    TIFF::TIFF
+    Jasper::Jasper
+    JPEG::JPEG
 )
 
 find_program(GLSLC_EXECUTABLE glslc HINTS $ENV{VULKAN_SDK}/bin)
