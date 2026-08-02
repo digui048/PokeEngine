@@ -123,10 +123,13 @@ bool VulkanPhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VulkanSurfa
         swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
     }
 
-    return indices.IsComplete() && extensionsSupported && swapChainAdequate;
+    VkPhysicalDeviceFeatures supportedFeatures;
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+    return indices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
-bool Poke::VulkanPhysicalDevice::CheckDeviceExtensionsSuport(VkPhysicalDevice device)
+bool VulkanPhysicalDevice::CheckDeviceExtensionsSuport(VkPhysicalDevice device)
 {
     uint32_t extensionsCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr);

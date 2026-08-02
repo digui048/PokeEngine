@@ -13,6 +13,7 @@ namespace Poke
     class IndexBuffer;
     class UniformBuffer;
     class VulkanPipeline;
+    class VulkanTexture;
 
     class Application
     {
@@ -52,6 +53,7 @@ namespace Poke
         std::unique_ptr<UniformBuffer> m_uniformBuffer;
 
         std::shared_ptr<VulkanPipeline> m_defaultPipeline;
+        std::shared_ptr<VulkanTexture> m_texture;
     };
 }
 

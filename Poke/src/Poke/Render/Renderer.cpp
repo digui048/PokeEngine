@@ -5,6 +5,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <IL/il.h>
+
 #include "Poke/Render/Vulkan/VulkanContext.h"
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 
@@ -17,6 +19,7 @@ void Renderer::Init(Window &window)
 {
     s_Context = std::make_unique<VulkanContext>();
     s_Context->Init(window);
+    ilInit();
 }
 
 void Renderer::Shutdown()

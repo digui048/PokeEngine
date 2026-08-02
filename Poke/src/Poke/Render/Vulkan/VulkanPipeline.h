@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Poke/Render/UniformBuffer.h"
+#include "Poke/Render/Vulkan/VulkanTexture.h"
 
 namespace Poke
 {
@@ -19,13 +20,13 @@ namespace Poke
         VulkanPipeline() = default;
         ~VulkanPipeline();
 
-        void Init(VulkanDevice& device, VulkanSwapchain& swapchain, VulkanRenderPass &renderPass, const std::string& vertPath, const std::string& fragPath);
-        void Shutdown(VulkanDevice& device);
+        void Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath);
+        void Shutdown(VulkanDevice &device);
 
         VkPipeline GetPipeline() const { return m_pipeline; }
         VkPipelineLayout GetPipelineLayout() const { return m_pipelineLayout; }
 
-        void SetupDescriptors(const UniformBuffer* uniformBuffer);
+        void SetupDescriptors(const UniformBuffer *uniformBuffer, const VulkanTexture *textureBuffer);
         void BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame);
 
     private:

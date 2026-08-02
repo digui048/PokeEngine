@@ -48,6 +48,7 @@ void VulkanDevice::CreateLogicalDevice(VulkanInstance &instance, VulkanPhysicalD
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
     const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     VkDeviceCreateInfo createInfo{};
