@@ -49,20 +49,27 @@ void Application::Run()
     OnInit();
 
     std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f, -0.5,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
     const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0};
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6 ,7, 4
+    };
 
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
     m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
     m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
-    
+
     m_texture = std::make_shared<VulkanTexture>();
     m_texture->Load("Poke/assets/test.png");
 

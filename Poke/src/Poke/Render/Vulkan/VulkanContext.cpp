@@ -74,9 +74,12 @@ VkCommandBuffer VulkanContext::BeginFrame(Window &window, float r, float g, floa
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapchain.GetExtent();
 
-    VkClearValue clearColor = {{{r, g, b, a}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues[0].color = {{r, g, b, a}};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -90,7 +93,7 @@ VkCommandBuffer VulkanContext::BeginFrame(Window &window, float r, float g, floa
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
+    scissor.offset = {0, 0};
     scissor.extent = m_swapchain.GetExtent();
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
@@ -195,8 +198,10 @@ void VulkanContext::RecreateSwapchain(Window &window)
     vkDeviceWaitIdle(m_device.GetHandle());
 
     m_framebuffer.Shutdown(m_device);
+    m_renderPass.Shutdown(m_device);
 
     VkSwapchainKHR oldSwapchain = m_swapchain.GetHandle();
     m_swapchain.Init(m_device, m_physicalDevice, m_surface, window, oldSwapchain);
+    m_renderPass.Init(m_device, m_swapchain);
     m_framebuffer.Init(m_device, m_swapchain, m_renderPass);
 }
