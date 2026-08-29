@@ -6,11 +6,10 @@
 #include "Module.h"
 
 #include "Poke/Render/Renderer.h"
-#include "Poke/Render/VertexBuffer.h"
-#include "Poke/Render/IndexBuffer.h"
 #include "Poke/Render/UniformBuffer.h"
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 #include "Poke/Render/Vulkan/VulkanTexture.h"
+#include "Poke/Importers/MeshImporter.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -48,30 +47,32 @@ void Application::Run()
 
     OnInit();
 
-    std::vector<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{ 0.5f, -0.5,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+    // std::vector<Vertex> vertices = {
+    //     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    //     {{ 0.5f, -0.5,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    //     {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    //     {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-    };
+    //     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    //     {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    //     {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    //     {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+    // };
 
-    const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6 ,7, 4
-    };
+    // const std::vector<uint16_t> indices = {
+    //     0, 1, 2, 2, 3, 0,
+    //     4, 5, 6, 6 ,7, 4
+    // };
+
+    m_mesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
 
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
-    m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
-    m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
+    // m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
+    // m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
 
     m_texture = std::make_shared<VulkanTexture>();
-    m_texture->Load("Poke/assets/test.png");
+    m_texture->Load("Poke/assets/default_Base_Color.png");
 
     m_defaultPipeline->SetupDescriptors(m_uniformBuffer.get(), m_texture.get());
 
@@ -105,10 +106,9 @@ void Application::Run()
             Renderer::BindPipeline(cmd, m_defaultPipeline);
             Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
 
-            m_vertexBuffer->Bind(cmd);
-            m_indexBuffer->Bind(cmd);
+            m_mesh->Bind(cmd);
 
-            vkCmdDrawIndexed(cmd, m_indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(m_mesh->GetIndices().size()), 1, 0, 0, 0);
 
             m_imguiManager->BeginFrame();
 
@@ -135,8 +135,7 @@ void Application::Run()
 
     Renderer::WaitIdle();
 
-    m_vertexBuffer.reset();
-    m_indexBuffer.reset();
+    m_mesh.reset();
     m_uniformBuffer.reset();
     m_texture.reset();
     m_defaultPipeline.reset();

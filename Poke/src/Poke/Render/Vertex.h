@@ -13,6 +13,13 @@ namespace Poke
         glm::vec3 color;
         glm::vec2 texCoord;
 
+        bool operator==(const Vertex &other) const
+        {
+            return pos.x == other.pos.x && pos.y == other.pos.y && pos.z == other.pos.z &&
+                   color.x == other.color.x && color.y == other.color.y && color.z == other.color.z &&
+                   texCoord.x == other.texCoord.x && texCoord.y == other.texCoord.y;
+        }
+
         static VkVertexInputBindingDescription GetBindingDescription()
         {
             VkVertexInputBindingDescription bindingDescription{};
