@@ -3,6 +3,7 @@
 #include "ImGuiManager.h"
 #include "Log.h"
 #include "Time.h"
+#include "Input.h"
 #include "Module.h"
 
 #include "Poke/Render/Renderer.h"
@@ -10,6 +11,8 @@
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 #include "Poke/Render/Vulkan/VulkanTexture.h"
 #include "Poke/Importers/MeshImporter.h"
+
+#include "Poke/Scene/EditorCamera.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -26,6 +29,8 @@ Application::Application()
     s_Instance = this;
 
     m_window = std::make_unique<Window>("PokeEngine", WINDOW_PREV_WIDTH, WINDOW_PREV_HEIGHT);
+
+    Input::Init(m_window->GetSDLWindow());
 
     Time::Init();
 
@@ -47,28 +52,8 @@ void Application::Run()
 
     OnInit();
 
-    // std::vector<Vertex> vertices = {
-    //     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    //     {{ 0.5f, -0.5,  0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    //     {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    //     {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-    //     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    //     {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    //     {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    //     {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-    // };
-
-    // const std::vector<uint16_t> indices = {
-    //     0, 1, 2, 2, 3, 0,
-    //     4, 5, 6, 6 ,7, 4
-    // };
-
     m_mesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
-
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
-    // m_vertexBuffer = std::make_unique<Poke::VertexBuffer>(vertices);
-    // m_indexBuffer = std::make_unique<Poke::IndexBuffer>(indices);
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
 
     m_texture = std::make_shared<VulkanTexture>();
@@ -78,25 +63,25 @@ void Application::Run()
 
     Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 
+    int w;
+    int h;
+    m_window->GetWindowSize(w, h);
+    EditorCamera::Get().Init(w, h);
+
     while (m_Running)
     {
         Time::Update();
-
         PollEvents();
+        Input::Update();
 
-        static float time = 0.0f;
-        time += Time::DeltaTime();
+        EditorCamera::Get().OnUpdate(Time::DeltaTime());
+        m_window->GetWindowSize(w, h);
+        EditorCamera::Get().Resize(w, h);
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-        int w;
-        int h;
-        m_window->GetWindowSize(w, h);
-        float aspect = static_cast<float>(w) / static_cast<float>(h);
-        ubo.proj = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f);
-        ubo.proj[1][1] *= -1;
+        ubo.model = glm::mat4(1.0f);
+        ubo.view = EditorCamera::Get().GetViewMatrix();
+        ubo.proj = EditorCamera::Get().GetProjectionMatrix();
 
         m_uniformBuffer->SetData(&ubo);
 
@@ -185,6 +170,10 @@ void Application::PollEvents()
         case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             Renderer::FrameResized();
+            break;
+        
+        case SDL_EVENT_MOUSE_WHEEL:
+            EditorCamera::Get().OnMouseScroll(sdlEvent.wheel.y);
             break;
 
         default:
