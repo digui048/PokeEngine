@@ -26,7 +26,7 @@ namespace Poke
         GameObject *GetOwner() const { return m_owner; }
         ComponentType GetType() const { return m_type; }
         bool IsActive() const { return m_active; }
-        bool SetActive(bool state) { m_active = state; }
+        void SetActive(bool state) { m_active = state; }
 
     protected:
         GameObject *m_owner;

@@ -12,7 +12,7 @@ namespace Poke
     public:
         MeshImporter() = delete;
 
-        static std::unique_ptr<Mesh> LoadMesh(const std::string &filepath);
+        static std::shared_ptr<Mesh> LoadMesh(const std::string &filepath);
     };
 }
 

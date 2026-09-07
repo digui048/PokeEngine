@@ -13,6 +13,9 @@
 #include "Poke/Importers/MeshImporter.h"
 
 #include "Poke/Scene/EditorCamera.h"
+#include "Poke/Scene/Scene.h"
+#include "Poke/Scene/Components/MeshComponent.h"
+#include "Poke/Resources/Mesh.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -52,7 +55,12 @@ void Application::Run()
 
     OnInit();
 
-    m_mesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
+    m_scene = std::make_unique<Scene>();
+    std::shared_ptr<Mesh> shibaMesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
+    
+    GameObject* shibaEntity = m_scene->CreateGameObject("Shiba");
+    auto* meshComp = shibaEntity->AddComponent<MeshComponent>(std::move(shibaMesh));
+
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
 
@@ -91,9 +99,9 @@ void Application::Run()
             Renderer::BindPipeline(cmd, m_defaultPipeline);
             Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
 
-            m_mesh->Bind(cmd);
+            meshComp->BindMesh(cmd);
 
-            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(m_mesh->GetIndices().size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(meshComp->GetMesh()->GetIndices().size()), 1, 0, 0, 0);
 
             m_imguiManager->BeginFrame();
 
@@ -120,7 +128,7 @@ void Application::Run()
 
     Renderer::WaitIdle();
 
-    m_mesh.reset();
+    m_scene->OnShutdown();
     m_uniformBuffer.reset();
     m_texture.reset();
     m_defaultPipeline.reset();

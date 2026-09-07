@@ -10,6 +10,7 @@ namespace Poke
     class ImGuiManager;
     class Module;
     class Mesh;
+    class Scene;
     class UniformBuffer;
     class VulkanPipeline;
     class VulkanTexture;
@@ -47,7 +48,7 @@ namespace Poke
 
         std::vector<std::shared_ptr<Module>> m_modules;
 
-        std::unique_ptr<Mesh> m_mesh;
+        std::unique_ptr<Scene> m_scene;
 
         std::unique_ptr<UniformBuffer> m_uniformBuffer;
 

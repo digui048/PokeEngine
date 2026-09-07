@@ -24,7 +24,7 @@ namespace std
 
 using namespace Poke;
 
-std::unique_ptr<Mesh> MeshImporter::LoadMesh(const std::string &filepath)
+std::shared_ptr<Mesh> MeshImporter::LoadMesh(const std::string &filepath)
 {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -71,5 +71,5 @@ std::unique_ptr<Mesh> MeshImporter::LoadMesh(const std::string &filepath)
         }
     }
 
-    return std::make_unique<Mesh>(vertices, indices);
+    return std::make_shared<Mesh>(vertices, indices);
 }
