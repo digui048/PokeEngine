@@ -9,6 +9,13 @@
 namespace Poke
 {
     class EditorInterface;
+    class Mesh;
+    class Scene;
+    class GameObject;
+    class MeshComponent;
+    class UniformBuffer;
+    class VulkanPipeline;
+    class VulkanTexture;
 
     class EditorModule : public Module
     {
@@ -18,11 +25,12 @@ namespace Poke
 
         void OnInit() override;
         void OnUpdate(float dt) override;
+        void OnRender(VkCommandBuffer cmd) override;
         void OnImGuiRender() override;
         void OnShutdown() override;
 
-        template<typename T, typename... Args>
-        void AddInterface(Args&&... args)
+        template <typename T, typename... Args>
+        void AddInterface(Args &&...args)
         {
             auto interface = std::make_shared<T>(std::forward<Args>(args)...);
             interface->OnInit();
@@ -31,6 +39,15 @@ namespace Poke
 
     private:
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
+
+        std::unique_ptr<Scene> m_scene;
+        GameObject *m_shibaEntity;
+        MeshComponent *m_meshComp;
+
+        std::unique_ptr<UniformBuffer> m_uniformBuffer;
+
+        std::shared_ptr<VulkanPipeline> m_defaultPipeline;
+        std::shared_ptr<VulkanTexture> m_texture;
     };
 }
 

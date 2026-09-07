@@ -9,11 +9,6 @@ namespace Poke
     class Window;
     class ImGuiManager;
     class Module;
-    class Mesh;
-    class Scene;
-    class UniformBuffer;
-    class VulkanPipeline;
-    class VulkanTexture;
 
     class Application
     {
@@ -47,13 +42,6 @@ namespace Poke
         bool m_Running = true;
 
         std::vector<std::shared_ptr<Module>> m_modules;
-
-        std::unique_ptr<Scene> m_scene;
-
-        std::unique_ptr<UniformBuffer> m_uniformBuffer;
-
-        std::shared_ptr<VulkanPipeline> m_defaultPipeline;
-        std::shared_ptr<VulkanTexture> m_texture;
     };
 }
 

@@ -7,15 +7,8 @@
 #include "Module.h"
 
 #include "Poke/Render/Renderer.h"
-#include "Poke/Render/UniformBuffer.h"
-#include "Poke/Render/Vulkan/VulkanPipeline.h"
-#include "Poke/Render/Vulkan/VulkanTexture.h"
-#include "Poke/Importers/MeshImporter.h"
 
 #include "Poke/Scene/EditorCamera.h"
-#include "Poke/Scene/Scene.h"
-#include "Poke/Scene/Components/MeshComponent.h"
-#include "Poke/Resources/Mesh.h"
 
 #include "imgui_impl_sdl3.h"
 
@@ -55,26 +48,7 @@ void Application::Run()
 
     OnInit();
 
-    m_scene = std::make_unique<Scene>();
-    std::shared_ptr<Mesh> shibaMesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
-    
-    GameObject* shibaEntity = m_scene->CreateGameObject("Shiba");
-    auto* meshComp = shibaEntity->AddComponent<MeshComponent>(std::move(shibaMesh));
-
-    m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
-    m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
-
-    m_texture = std::make_shared<VulkanTexture>();
-    m_texture->Load("Poke/assets/default_Base_Color.png");
-
-    m_defaultPipeline->SetupDescriptors(m_uniformBuffer.get(), m_texture.get());
-
     Renderer::SetClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-
-    int w;
-    int h;
-    m_window->GetWindowSize(w, h);
-    EditorCamera::Get().Init(w, h);
 
     while (m_Running)
     {
@@ -82,26 +56,21 @@ void Application::Run()
         PollEvents();
         Input::Update();
 
-        EditorCamera::Get().OnUpdate(Time::DeltaTime());
-        m_window->GetWindowSize(w, h);
-        EditorCamera::Get().Resize(w, h);
+        float dt = Time::DeltaTime();
 
-        UniformBufferObject ubo{};
-        ubo.model = glm::mat4(1.0f);
-        ubo.view = EditorCamera::Get().GetViewMatrix();
-        ubo.proj = EditorCamera::Get().GetProjectionMatrix();
-
-        m_uniformBuffer->SetData(&ubo);
+        OnUpdate(dt);
+        for (auto &module : m_modules)
+        {
+            module->OnUpdate(dt);
+        }
 
         VkCommandBuffer cmd = Renderer::BeginFrame(*m_window);
         if (cmd != VK_NULL_HANDLE)
         {
-            Renderer::BindPipeline(cmd, m_defaultPipeline);
-            Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
-
-            meshComp->BindMesh(cmd);
-
-            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(meshComp->GetMesh()->GetIndices().size()), 1, 0, 0, 0);
+            for (auto &module : m_modules)
+            {
+                module->OnRender(cmd);
+            }
 
             m_imguiManager->BeginFrame();
 
@@ -114,24 +83,12 @@ void Application::Run()
 
             Renderer::EndFrame(*m_window);
         }
-
-        OnUpdate(Time::DeltaTime());
-
-        for (auto &module : m_modules)
-        {
-            module->OnUpdate(Time::DeltaTime());
-        }
     }
-
-    ClearModules();
-    OnShutdown();
 
     Renderer::WaitIdle();
 
-    m_scene->OnShutdown();
-    m_uniformBuffer.reset();
-    m_texture.reset();
-    m_defaultPipeline.reset();
+    ClearModules();
+    OnShutdown();
 
     m_imguiManager.reset();
     Renderer::Shutdown();
@@ -179,7 +136,7 @@ void Application::PollEvents()
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             Renderer::FrameResized();
             break;
-        
+
         case SDL_EVENT_MOUSE_WHEEL:
             EditorCamera::Get().OnMouseScroll(sdlEvent.wheel.y);
             break;

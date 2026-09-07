@@ -1,6 +1,8 @@
 #ifndef MODULE_H
 #define MODULE_H
 
+#include <vulkan/vulkan.h>
+
 namespace Poke
 {
     class Module
@@ -10,6 +12,7 @@ namespace Poke
 
             virtual void OnInit() {}
             virtual void OnUpdate(float dt) {}
+            virtual void OnRender(VkCommandBuffer cmd) {}
             virtual void OnImGuiRender() {}
             virtual void OnShutdown() {}
     };
