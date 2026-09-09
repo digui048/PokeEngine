@@ -38,11 +38,13 @@ namespace Poke
         }
 
     private:
+        void RenderEntity(VkCommandBuffer cmd, GameObject *entity);
+
+    private:
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
 
         std::unique_ptr<Scene> m_scene;
         GameObject *m_shibaEntity;
-        MeshComponent *m_meshComp;
 
         std::unique_ptr<UniformBuffer> m_uniformBuffer;
 

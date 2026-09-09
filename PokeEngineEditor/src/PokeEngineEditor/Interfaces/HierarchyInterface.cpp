@@ -1,5 +1,8 @@
 #include "HierarchyInterface.h"
 
+#include "Poke/Scene/Scene.h"
+#include "Poke/Scene/GameObject.h"
+
 #include <imgui.h>
 
 using namespace Poke;
@@ -10,27 +13,36 @@ void HierarchyInterface::OnInit()
 
 void HierarchyInterface::OnImGuiRender()
 {
-    if (!m_IsOpen)
+    if (!m_isOpen)
         return;
 
-    ImGui::Begin(m_Name.c_str(), &m_IsOpen);
+    ImGui::Begin(m_name.c_str(), &m_isOpen);
 
-    if (ImGui::TreeNode("Main Camera"))
+    const auto root = m_scene->GetRoot();
+    for (const auto &object : root->GetChildren())
     {
-        ImGui::TreePop();
-    }
-    if (ImGui::TreeNode("Testing Cube"))
-    {
-        ImGui::TreePop();
+        DrawEntityNode(object.get());
     }
 
     ImGui::End();
+}
 
-    // debug fps
-    ImGui::Begin("Stats");
-    
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::Text("Frame Time: %.3f ms", 1000.0f / ImGui::GetIO().Framerate);
+void HierarchyInterface::DrawEntityNode(GameObject *entity)
+{
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-    ImGui::End();
+    if (entity->GetChildren().empty())
+    {
+        flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+
+    bool expanded = ImGui::TreeNodeEx((void *)entity, flags, "%s", entity->GetName().c_str());
+    if (expanded)
+    {
+        for (const auto &child : entity->GetChildren())
+        {
+            DrawEntityNode(child.get());
+        }
+        ImGui::TreePop();
+    }
 }

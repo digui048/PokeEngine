@@ -20,9 +20,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (MSVC)
-    add_compile_options(/GR- /EHs-)
+    add_compile_options(/GR)
 else()
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-frtti>)
 endif()
 
 set(SDL_VULKAN ON CACHE BOOL "" FORCE)

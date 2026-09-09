@@ -27,16 +27,14 @@ EditorModule::~EditorModule() = default;
 
 void EditorModule::OnInit()
 {
-    AddInterface<HierarchyInterface>();
-    AddInterface<MainMenuBarInterface>();
-
     m_scene = std::make_unique<Scene>();
     m_scene->OnInit();
 
-    std::shared_ptr<Mesh> shibaMesh = MeshImporter::LoadMesh("Poke/assets/shiba.fbx");
+    AddInterface<HierarchyInterface>(m_scene.get());
+    AddInterface<MainMenuBarInterface>();
 
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
-    m_meshComp = m_shibaEntity->AddComponent<MeshComponent>(std::move(shibaMesh));
+    MeshImporter::LoadHierarchy("Poke/assets/shiba.fbx", m_shibaEntity);
 
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
     m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
@@ -83,9 +81,11 @@ void EditorModule::OnRender(VkCommandBuffer cmd)
     Renderer::BindPipeline(cmd, m_defaultPipeline);
     Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
 
-    m_meshComp->BindMesh(cmd);
-
-    vkCmdDrawIndexed(cmd, static_cast<uint32_t>(m_meshComp->GetMesh()->GetIndices().size()), 1, 0, 0, 0);
+    const auto &rootObj = m_scene->GetRoot();
+    for (const auto &obj : rootObj->GetChildren())
+    {
+        RenderEntity(cmd, obj.get());
+    }
 }
 
 void EditorModule::OnImGuiRender()
@@ -107,4 +107,24 @@ void EditorModule::OnShutdown()
     m_uniformBuffer.reset();
     m_texture.reset();
     m_defaultPipeline.reset();
+}
+
+void EditorModule::RenderEntity(VkCommandBuffer cmd, GameObject *entity)
+{
+    if (!entity || !entity->IsActive())
+        return;
+
+    if (auto *meshComp = entity->GetComponent<MeshComponent>())
+    {
+        if (auto mesh = meshComp->GetMesh())
+        {
+            meshComp->BindMesh(cmd);
+            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh->GetIndices().size()), 1, 0, 0, 0);
+        }
+    }
+
+    for (const auto &child : entity->GetChildren())
+    {
+        RenderEntity(cmd, child.get());
+    }
 }

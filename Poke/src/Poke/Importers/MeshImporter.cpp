@@ -1,14 +1,12 @@
 #include "MeshImporter.h"
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <unordered_map>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
 #include "Poke/Core/Log.h"
+#include "Poke/Scene/GameObject.h"
+#include "Poke/Scene/Components/MeshComponent.h"
 
 namespace std
 {
@@ -24,7 +22,7 @@ namespace std
 
 using namespace Poke;
 
-std::shared_ptr<Mesh> MeshImporter::LoadMesh(const std::string &filepath)
+void MeshImporter::LoadHierarchy(const std::string &filepath, GameObject *rootObject)
 {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -32,42 +30,68 @@ std::shared_ptr<Mesh> MeshImporter::LoadMesh(const std::string &filepath)
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         POKE_CORE_ERROR("Assimp filed: {0}", std::string(importer.GetErrorString()));
+        return;
     }
 
+    ProcessNode(scene->mRootNode, scene, rootObject);
+}
+
+void MeshImporter::ProcessNode(aiNode *node, const aiScene *scene, GameObject *parentObject)
+{
+    GameObject *currentObject = parentObject;
+
+    if (node != scene->mRootNode)
+    {
+        auto child = std::make_unique<GameObject>(node->mName.C_Str());
+        currentObject = child.get();
+        parentObject->AddChild(std::move(child));
+    }
+
+    for (unsigned int i = 0; i < node->mNumMeshes; ++i)
+    {
+        aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
+        std::shared_ptr<Mesh> parsedMesh = ProcessMesh(mesh, scene);
+        currentObject->AddComponent<MeshComponent>(parsedMesh);
+    }
+
+    for (unsigned int i = 0; i < node->mNumChildren; ++i)
+    {
+        ProcessNode(node->mChildren[i], scene, currentObject);
+    }
+}
+
+std::shared_ptr<Mesh> MeshImporter::ProcessMesh(aiMesh *mesh, const aiScene *scene)
+{
     std::vector<Vertex> vertices;
     std::vector<uint16_t> indices;
     std::unordered_map<Vertex, uint16_t> uniqueVertices{};
 
-    for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
+    for (unsigned int j = 0; j < mesh->mNumFaces; ++j)
     {
-        aiMesh *mesh = scene->mMeshes[i];
-        for (unsigned int j = 0; j < mesh->mNumFaces; ++j)
+        aiFace face = mesh->mFaces[j];
+        for (unsigned int k = 0; k < face.mNumIndices; ++k)
         {
-            aiFace face = mesh->mFaces[j];
-            for (unsigned int k = 0; k < face.mNumIndices; ++k)
+            unsigned int index = face.mIndices[k];
+            Vertex vertex{};
+
+            vertex.pos = {mesh->mVertices[index].x, mesh->mVertices[index].y, mesh->mVertices[index].z};
+            vertex.color = {1.0f, 1.0f, 1.0f};
+
+            if (mesh->mTextureCoords[0])
             {
-                unsigned int index = face.mIndices[k];
-                Vertex vertex{};
-
-                vertex.pos = {mesh->mVertices[index].x, mesh->mVertices[index].y, mesh->mVertices[index].z};
-                vertex.color = {1.0f, 1.0f, 1.0f};
-
-                if (mesh->mTextureCoords[0])
-                {
-                    vertex.texCoord = {mesh->mTextureCoords[0][index].x, mesh->mTextureCoords[0][index].y};
-                }
-                else
-                {
-                    vertex.texCoord = {0.0f, 0.0f};
-                }
-
-                if (uniqueVertices.count(vertex) == 0)
-                {
-                    uniqueVertices[vertex] = static_cast<uint16_t>(vertices.size());
-                    vertices.push_back(vertex);
-                }
-                indices.push_back(uniqueVertices[vertex]);
+                vertex.texCoord = {mesh->mTextureCoords[0][index].x, mesh->mTextureCoords[0][index].y};
             }
+            else
+            {
+                vertex.texCoord = {0.0f, 0.0f};
+            }
+
+            if (uniqueVertices.count(vertex) == 0)
+            {
+                uniqueVertices[vertex] = static_cast<uint16_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+            indices.push_back(uniqueVertices[vertex]);
         }
     }
 
