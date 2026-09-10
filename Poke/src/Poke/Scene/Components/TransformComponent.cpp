@@ -110,6 +110,11 @@ void TransformComponent::SetWorldTranslation(const glm::vec3 &worldPosition)
     SetLocalTranslation(worldPosition);
 }
 
+void TransformComponent::MovePosition(const glm::vec3 &deltaWorldOffset)
+{
+    SetWorldTranslation(GetWorldTranslation() + deltaWorldOffset);
+}
+
 void TransformComponent::SetLocalRotation(const glm::quat &rotation)
 {
     glm::quat deltaQuat = rotation * glm::inverse(m_rotation);
@@ -148,6 +153,21 @@ glm::quat TransformComponent::GetWorldRotation() const
 glm::vec3 TransformComponent::GetWorldRotationEuler() const
 {
     return glm::degrees(glm::eulerAngles(GetWorldRotation()));
+}
+
+void TransformComponent::RotateLocalX(float angleRadians)
+{
+    SetLocalRotation(m_rotation * glm::angleAxis(angleRadians, glm::vec3(1, 0, 0)));
+}
+
+void TransformComponent::RotateLocalY(float angleRadians)
+{
+    SetLocalRotation(m_rotation * glm::angleAxis(angleRadians, glm::vec3(0, 1, 0)));
+}
+
+void TransformComponent::RotateLocalZ(float angleRadians)
+{
+    SetLocalRotation(m_rotation * glm::angleAxis(angleRadians, glm::vec3(0, 0, 1)));
 }
 
 void TransformComponent::SetLocalScale(const glm::vec3 &scale)

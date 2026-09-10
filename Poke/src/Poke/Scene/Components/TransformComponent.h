@@ -31,6 +31,7 @@ namespace Poke
         void SetLocalTranslation(const glm::vec3 &position);
         glm::vec3 GetWorldTranslation() const;
         void SetWorldTranslation(const glm::vec3 &worldPosition);
+        void MovePosition(const glm::vec3& deltaWorldOffset);
 
         const glm::quat &GetLocalRotation() const { return m_rotation; }
         void SetLocalRotation(const glm::quat &rotation);
@@ -38,6 +39,9 @@ namespace Poke
         void SetLocalRotationEuler(const glm::vec3 &degrees);
         glm::quat GetWorldRotation() const;
         glm::vec3 GetWorldRotationEuler() const;
+        void RotateLocalX(float angleRadians);
+        void RotateLocalY(float angleRadians);
+        void RotateLocalZ(float angleRadians);
 
         const glm::vec3 &GetLocalScale() const { return m_scale; }
         void SetLocalScale(const glm::vec3 &scale);
