@@ -8,43 +8,18 @@
 
 namespace Poke
 {
+    class TransformComponent;
+
     class GameObject
     {
     public:
-        GameObject(const std::string &name = "GameObject", GameObject *parent = nullptr)
-            : m_name(name), m_parent(parent), m_active(true) {}
+        GameObject(const std::string &name = "GameObject", GameObject *parent = nullptr);
         ~GameObject() = default;
 
-        void Update(float deltaTime)
-        {
-            if (!m_active)
-                return;
+        TransformComponent *GetTransform() const { return m_transform; }
 
-            for (auto &component : m_components)
-            {
-                if (component->IsActive())
-                {
-                    component->Update(deltaTime);
-                }
-            }
-
-            for (auto &child : m_children)
-            {
-                if (child->IsActive())
-                {
-                    child->Update(deltaTime);
-                }
-            }
-        }
-
-        void AddChild(std::unique_ptr<GameObject> child)
-        {
-            if (child)
-            {
-                child->m_parent = this;
-                m_children.push_back(std::move(child));
-            }
-        }
+        void Update(float deltaTime);
+        void AddChild(std::unique_ptr<GameObject> child);
 
         GameObject *GetParent() const { return m_parent; }
         const std::vector<std::unique_ptr<GameObject>> &GetChildren() const { return m_children; }
@@ -78,6 +53,7 @@ namespace Poke
         bool m_active = true;
 
         GameObject *m_parent;
+        TransformComponent *m_transform = nullptr;
         std::vector<std::unique_ptr<GameObject>> m_children;
         std::vector<std::unique_ptr<Component>> m_components;
     };

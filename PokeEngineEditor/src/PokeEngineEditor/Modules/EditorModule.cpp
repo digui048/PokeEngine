@@ -18,6 +18,7 @@
 #include "Poke/Scene/EditorCamera.h"
 #include "Poke/Scene/Scene.h"
 #include "Poke/Scene/Components/MeshComponent.h"
+#include "Poke/Scene/Components/TransformComponent.h"
 #include "Poke/Resources/Mesh.h"
 
 using namespace Poke;
@@ -69,7 +70,7 @@ void EditorModule::OnUpdate(float dt)
     EditorCamera::Get().Resize(w, h);
 
     UniformBufferObject ubo{};
-    ubo.model = glm::mat4(1.0f);
+    ubo.model = m_shibaEntity->GetTransform()->GetWorldTransform();
     ubo.view = EditorCamera::Get().GetViewMatrix();
     ubo.proj = EditorCamera::Get().GetProjectionMatrix();
 
