@@ -92,6 +92,10 @@ void EditorCamera::Focus(const glm::vec3 &targetPosition, float distance)
 {
     m_focalPoint = targetPosition;
     m_distance = distance;
+
+    m_yaw = -90.0f;
+    m_pitch = 20.0f;
+
     m_position = m_focalPoint - GetForwardVector() * m_distance;
     UpdateView();
 }

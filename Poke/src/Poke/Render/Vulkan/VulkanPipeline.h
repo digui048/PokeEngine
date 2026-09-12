@@ -20,7 +20,7 @@ namespace Poke
         VulkanPipeline() = default;
         ~VulkanPipeline();
 
-        void Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath);
+        void Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath, const std::vector<VkPushConstantRange>& pushConstantRanges);
         void Shutdown(VulkanDevice &device);
 
         VkPipeline GetPipeline() const { return m_pipeline; }
@@ -28,6 +28,9 @@ namespace Poke
 
         void SetupDescriptors(const UniformBuffer *uniformBuffer, const VulkanTexture *textureBuffer);
         void BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame);
+
+        template<typename T>
+        void PushConstants(VkCommandBuffer cmd, VkShaderStageFlags stageFlags, const T& data, uint32_t offset = 0);
 
     private:
         VkPipeline m_pipeline = VK_NULL_HANDLE;

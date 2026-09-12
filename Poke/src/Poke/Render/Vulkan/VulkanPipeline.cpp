@@ -18,7 +18,7 @@ VulkanPipeline::~VulkanPipeline()
     Shutdown(Renderer::GetContext().GetDevice());
 }
 
-void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath)
+void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath, const std::vector<VkPushConstantRange>& pushConstantRanges)
 {
     VkDevice logicalDevice = device.GetHandle();
 
@@ -124,8 +124,8 @@ void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, Vulk
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.empty() ? nullptr : pushConstantRanges.data();
 
     if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
     {
@@ -246,7 +246,7 @@ void VulkanPipeline::SetupDescriptors(const UniformBuffer *uniformBuffer, const 
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = uniformBuffer->GetBuffer(i);
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        bufferInfo.range = sizeof(CameraData);
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -278,4 +278,10 @@ void VulkanPipeline::SetupDescriptors(const UniformBuffer *uniformBuffer, const 
 void VulkanPipeline::BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame)
 {
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[currentFrame], 0, nullptr);
+}
+
+template <typename T>
+inline void VulkanPipeline::PushConstants(VkCommandBuffer cmd, VkShaderStageFlags stageFlags, const T &data, uint32_t offset)
+{
+    vkCmdPushConstants(cmd, m_pipelineLayout, stageFlags, offset, sizeof(T), &data);
 }
