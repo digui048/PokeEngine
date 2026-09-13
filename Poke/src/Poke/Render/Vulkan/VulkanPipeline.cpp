@@ -279,9 +279,3 @@ void VulkanPipeline::BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame)
 {
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[currentFrame], 0, nullptr);
 }
-
-template <typename T>
-inline void VulkanPipeline::PushConstants(VkCommandBuffer cmd, VkShaderStageFlags stageFlags, const T &data, uint32_t offset)
-{
-    vkCmdPushConstants(cmd, m_pipelineLayout, stageFlags, offset, sizeof(T), &data);
-}

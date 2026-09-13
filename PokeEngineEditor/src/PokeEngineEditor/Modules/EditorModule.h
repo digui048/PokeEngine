@@ -37,6 +37,8 @@ namespace Poke
             m_Interfaces.push_back(interface);
         }
 
+        void RenderWorld(VkCommandBuffer cmd);
+
     private:
         void RenderEntity(VkCommandBuffer cmd, GameObject *entity);
 
@@ -45,8 +47,6 @@ namespace Poke
 
         std::unique_ptr<Scene> m_scene;
         GameObject *m_shibaEntity;
-
-        std::unique_ptr<UniformBuffer> m_uniformBuffer;
 
         std::shared_ptr<VulkanPipeline> m_defaultPipeline;
         std::shared_ptr<VulkanTexture> m_texture;

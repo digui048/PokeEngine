@@ -17,6 +17,11 @@ namespace Poke
         alignas(16) glm::mat4 proj;
     };
 
+    struct ObjectData
+    {
+        glm::mat4 model;
+    };
+
     class UniformBuffer
     {
     public:

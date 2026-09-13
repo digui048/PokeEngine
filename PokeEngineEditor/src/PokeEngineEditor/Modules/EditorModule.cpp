@@ -37,17 +37,21 @@ void EditorModule::OnInit()
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
     MeshImporter::LoadHierarchy("Poke/assets/shiba.fbx", m_shibaEntity);
 
-    m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv");
-    m_uniformBuffer = std::make_unique<Poke::UniformBuffer>(sizeof(UniformBufferObject));
+    VkPushConstantRange pushConstantRange;
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(ObjectData);
+    std::vector<VkPushConstantRange> pushConstantRanges{pushConstantRange};
+
+    m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
 
     m_texture = std::make_shared<VulkanTexture>();
     m_texture->Load("Poke/assets/default_Base_Color.png");
 
-    m_defaultPipeline->SetupDescriptors(m_uniformBuffer.get(), m_texture.get());
+    m_defaultPipeline->SetupDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture.get());
 
     int w, h;
     Application::GetInstance().GetWindow()->GetWindowSize(w, h);
-
     EditorCamera::Get().Init(w, h);
 }
 
@@ -69,24 +73,12 @@ void EditorModule::OnUpdate(float dt)
     Application::GetInstance().GetWindow()->GetWindowSize(w, h);
     EditorCamera::Get().Resize(w, h);
 
-    UniformBufferObject ubo{};
-    ubo.model = m_shibaEntity->GetTransform()->GetWorldTransform();
-    ubo.view = EditorCamera::Get().GetViewMatrix();
-    ubo.proj = EditorCamera::Get().GetProjectionMatrix();
-
-    m_uniformBuffer->SetData(&ubo);
+    Renderer::UpdateCameraBuffer(EditorCamera::Get().GetViewMatrix(), EditorCamera::Get().GetProjectionMatrix());
 }
 
 void EditorModule::OnRender(VkCommandBuffer cmd)
 {
-    Renderer::BindPipeline(cmd, m_defaultPipeline);
-    Renderer::BindPipelineDescriptors(cmd, m_defaultPipeline);
-
-    const auto &rootObj = m_scene->GetRoot();
-    for (const auto &obj : rootObj->GetChildren())
-    {
-        RenderEntity(cmd, obj.get());
-    }
+    RenderWorld(cmd);
 }
 
 void EditorModule::OnImGuiRender()
@@ -105,27 +97,46 @@ void EditorModule::OnShutdown()
     }
     m_Interfaces.clear();
     m_scene->OnShutdown();
-    m_uniformBuffer.reset();
     m_texture.reset();
     m_defaultPipeline.reset();
 }
 
-void EditorModule::RenderEntity(VkCommandBuffer cmd, GameObject *entity)
+void EditorModule::RenderWorld(VkCommandBuffer cmd)
 {
-    if (!entity || !entity->IsActive())
+    if (!m_scene || !m_scene->GetRoot())
         return;
 
-    if (auto *meshComp = entity->GetComponent<MeshComponent>())
+    std::vector<GameObject *> entities;
+    std::vector<GameObject *> traversalStack = {m_scene->GetRoot()};
+
+    while (!traversalStack.empty())
     {
-        if (auto mesh = meshComp->GetMesh())
+        GameObject *entity = traversalStack.back();
+        traversalStack.pop_back();
+
+        if (!entity || !entity->IsActive())
+            continue;
+
+        entities.push_back(entity);
+
+        for (const auto &child : entity->GetChildren())
         {
-            meshComp->BindMesh(cmd);
-            vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh->GetIndices().size()), 1, 0, 0, 0);
+            traversalStack.push_back(child.get());
         }
     }
 
-    for (const auto &child : entity->GetChildren())
+    for (GameObject *entity : entities)
     {
-        RenderEntity(cmd, child.get());
+        auto *meshComp = entity->GetComponent<MeshComponent>();
+        if (!meshComp)
+            continue;
+
+        auto mesh = meshComp->GetMesh();
+        if (!mesh)
+            continue;
+
+        Renderer::SubmitRenderItem(mesh, entity->GetTransform()->GetWorldTransform());
     }
+
+    Renderer::FlushQueue(cmd, m_defaultPipeline);
 }
