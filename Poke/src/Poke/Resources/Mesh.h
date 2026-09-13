@@ -22,6 +22,9 @@ namespace Poke
 
         const std::vector<Vertex> &GetVertices() const { return m_vertices; }
         const std::vector<uint16_t> &GetIndices() const { return m_indices; }
+        
+        size_t GetVerticesCount() const { return m_vertices.size(); }
+        size_t GetIndicesCount() const { return m_indices.size(); }
 
     private:
         std::vector<Vertex> m_vertices;

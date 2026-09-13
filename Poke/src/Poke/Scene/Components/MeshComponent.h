@@ -16,6 +16,9 @@ namespace Poke
         void SetMesh(std::shared_ptr<Mesh> mesh) { m_mesh = mesh; }
         std::shared_ptr<Mesh> GetMesh() const { return m_mesh; }
 
+        size_t GetVerticesCount() const { return m_mesh ? m_mesh->GetVerticesCount() : 0; }
+        size_t GetIndicesCount() const { return m_mesh ? m_mesh->GetIndicesCount() : 0; }
+
         void BindMesh(VkCommandBuffer cmdBuffer) const;
 
     private:

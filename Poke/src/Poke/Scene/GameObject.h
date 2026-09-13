@@ -44,6 +44,8 @@ namespace Poke
             return nullptr;
         }
 
+        const std::vector<std::unique_ptr<Component>> &GetComponents() { return m_components; }
+
         const std::string &GetName() const { return m_name; }
         void SetActive(bool state) { m_active = state; }
         bool IsActive() const { return m_active; }
