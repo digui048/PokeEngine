@@ -15,6 +15,7 @@
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 #include "Poke/Render/Vulkan/VulkanTexture.h"
 #include "Poke/Importers/MeshImporter.h"
+#include "Poke/Importers/TextureImporter.h"
 
 #include "Poke/Scene/EditorCamera.h"
 #include "Poke/Scene/Scene.h"
@@ -47,10 +48,9 @@ void EditorModule::OnInit()
 
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
 
-    m_texture = std::make_shared<VulkanTexture>();
-    m_texture->Load("Poke/assets/default_Base_Color.png");
+    m_texture = TextureImporter::LoadTexture("Poke/assets/default_Base_Color.png");
 
-    m_defaultPipeline->SetupDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture.get());
+    m_defaultPipeline->SetupDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture->GetVulkanTexture());
 
     int w, h;
     Application::GetInstance().GetWindow()->GetWindowSize(w, h);

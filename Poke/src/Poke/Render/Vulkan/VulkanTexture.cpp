@@ -4,41 +4,21 @@
 #include "Poke/Render/Vulkan/VulkanContext.h"
 #include "Poke/Core/Log.h"
 
-#include <IL/il.h>
-
 using namespace Poke;
 
-VulkanTexture::~VulkanTexture()
+VulkanTexture::VulkanTexture(const void *pixels, uint32_t width, uint32_t height, VkFormat format)
 {
-    Shutdown();
-}
-
-void VulkanTexture::Load(const std::string &filepath)
-{
-    ILuint imageID;
-    ilGenImages(1, &imageID);
-    ilBindImage(imageID);
-
-    if (!ilLoadImage(filepath.c_str()))
+    if (!pixels || width == 0 || height == 0)
     {
-        ilDeleteImages(1, &imageID);
-        POKE_CORE_ERROR("Failed to load texture image with path: {0}", filepath);
+        POKE_CORE_ERROR("[VulkanTexture] Invalid pixel buffer provided");
         return;
     }
 
-    ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE);
+    m_width = width;
+    m_height = height;
+    m_format = format;
 
-    m_width = ilGetInteger(IL_IMAGE_WIDTH);
-    m_height = ilGetInteger(IL_IMAGE_HEIGHT);
-    ILubyte *pixels = ilGetData();
     VkDeviceSize imageSize = m_width * m_height * 4;
-
-    if (!pixels)
-    {
-        ilDeleteImages(1, &imageID);
-        POKE_CORE_ERROR("Failed to get pixel data");
-        return;
-    }
 
     VulkanContext &context = Renderer::GetContext();
     VkDevice device = context.GetDevice().GetHandle();
@@ -52,8 +32,6 @@ void VulkanTexture::Load(const std::string &filepath)
     memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBufferMemory);
 
-    ilDeleteImages(1, &imageID);
-
     CreateImage(m_width, m_height, m_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     TransitionImageLayout(m_image, m_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     CopyBufferToImage(stagingBuffer, m_image, m_width, m_height);
@@ -64,6 +42,11 @@ void VulkanTexture::Load(const std::string &filepath)
 
     CreateImageView();
     CreateSampler();
+}
+
+VulkanTexture::~VulkanTexture()
+{
+    Shutdown();
 }
 
 void VulkanTexture::Shutdown()

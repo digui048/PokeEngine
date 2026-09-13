@@ -9,10 +9,9 @@ namespace Poke
     class VulkanTexture
     {
     public:
-        VulkanTexture() = default;
+        VulkanTexture(const void *pixels, uint32_t width, uint32_t height, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
         ~VulkanTexture();
 
-        void Load(const std::string &filepath);
         void Shutdown();
 
         VkImage GetImage() const { return m_image; }
