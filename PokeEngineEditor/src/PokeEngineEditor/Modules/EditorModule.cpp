@@ -6,6 +6,7 @@
 
 #include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
 #include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
+#include "PokeEngineEditor/Interfaces/InspectorInterface.h"
 
 #include "Poke/Core/Application.h"
 #include "Poke/Core/Window.h"
@@ -32,6 +33,7 @@ void EditorModule::OnInit()
     m_scene->OnInit();
 
     AddInterface<HierarchyInterface>(m_scene.get());
+    AddInterface<InspectorInterface>();
     AddInterface<MainMenuBarInterface>();
 
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
