@@ -67,7 +67,7 @@ void Renderer::BindPipeline(VkCommandBuffer cmdBuffer, const std::shared_ptr<Vul
 
 void Renderer::BindPipelineDescriptors(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline> &pipeline)
 {
-    pipeline->BindDescriptors(cmdBuffer, s_Context->GetCurrentFrame());
+    pipeline->BindGlobalDescriptors(cmdBuffer, s_Context->GetCurrentFrame());
 }
 
 void Renderer::FrameResized()

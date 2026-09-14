@@ -50,7 +50,7 @@ void EditorModule::OnInit()
 
     m_texture = TextureImporter::LoadTexture("Poke/assets/default_Base_Color.png");
 
-    m_defaultPipeline->SetupDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture->GetVulkanTexture());
+    m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture->GetVulkanTexture());
 
     int w, h;
     Application::GetInstance().GetWindow()->GetWindowSize(w, h);

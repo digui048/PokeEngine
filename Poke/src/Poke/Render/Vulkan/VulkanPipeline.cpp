@@ -18,7 +18,7 @@ VulkanPipeline::~VulkanPipeline()
     Shutdown(Renderer::GetContext().GetDevice());
 }
 
-void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath, const std::vector<VkPushConstantRange>& pushConstantRanges)
+void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, VulkanRenderPass &renderPass, const std::string &vertPath, const std::string &fragPath, const std::vector<VkPushConstantRange> &pushConstantRanges)
 {
     VkDevice logicalDevice = device.GetHandle();
 
@@ -101,29 +101,39 @@ void VulkanPipeline::Init(VulkanDevice &device, VulkanSwapchain &swapchain, Vulk
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     uboLayoutBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding samplerLayoutBindind{};
-    samplerLayoutBindind.binding = 1;
-    samplerLayoutBindind.descriptorCount = 1;
-    samplerLayoutBindind.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBindind.pImmutableSamplers = nullptr;
-    samplerLayoutBindind.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutCreateInfo globalLayoutInfo{};
+    globalLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    globalLayoutInfo.bindingCount = 1;
+    globalLayoutInfo.pBindings = &uboLayoutBinding;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBindind};
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(logicalDevice, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(logicalDevice, &globalLayoutInfo, nullptr, &m_globalDescriptorSetLayout) != VK_SUCCESS)
     {
-        POKE_CORE_ERROR("Failed to create descriptor set layout");
+        POKE_CORE_ERROR("Failed to create global descriptor set layout");
     }
+
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo materialLayoutInfo{};
+    materialLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    materialLayoutInfo.bindingCount = 1;
+    materialLayoutInfo.pBindings = &samplerLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(logicalDevice, &materialLayoutInfo, nullptr, &m_textureDescriptorSetLayout) != VK_SUCCESS)
+    {
+        POKE_CORE_ERROR("Failed to create texture descriptor set layout");
+    }
+
+    std::array<VkDescriptorSetLayout, 2> layouts = {m_globalDescriptorSetLayout, m_textureDescriptorSetLayout};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+    pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.empty() ? nullptr : pushConstantRanges.data();
 
@@ -193,10 +203,16 @@ void Poke::VulkanPipeline::Shutdown(VulkanDevice &device)
         m_pipelineLayout = VK_NULL_HANDLE;
     }
 
-    if (m_descriptorSetLayout != VK_NULL_HANDLE)
+    if (m_globalDescriptorSetLayout != VK_NULL_HANDLE)
     {
-        vkDestroyDescriptorSetLayout(logicalDevice, m_descriptorSetLayout, nullptr);
-        m_descriptorSetLayout = VK_NULL_HANDLE;
+        vkDestroyDescriptorSetLayout(logicalDevice, m_globalDescriptorSetLayout, nullptr);
+        m_globalDescriptorSetLayout = VK_NULL_HANDLE;
+    }
+
+    if (m_textureDescriptorSetLayout != VK_NULL_HANDLE)
+    {
+        vkDestroyDescriptorSetLayout(logicalDevice, m_textureDescriptorSetLayout, nullptr);
+        m_textureDescriptorSetLayout = VK_NULL_HANDLE;
     }
 
     if (m_descriptorPool != VK_NULL_HANDLE)
@@ -206,7 +222,7 @@ void Poke::VulkanPipeline::Shutdown(VulkanDevice &device)
     }
 }
 
-void VulkanPipeline::SetupDescriptors(const UniformBuffer *uniformBuffer, const VulkanTexture *textureBuffer)
+void VulkanPipeline::SetupGlobalDescriptors(const UniformBuffer *uniformBuffer, const VulkanTexture *textureBuffer)
 {
     VkDevice device = Renderer::GetContext().GetDevice().GetHandle();
 
@@ -220,20 +236,19 @@ void VulkanPipeline::SetupDescriptors(const UniformBuffer *uniformBuffer, const 
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
+    poolInfo.maxSets = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT * 2);
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
     {
         POKE_CORE_ERROR("[Vulkan] Failed to create descriptor pool");
     }
 
-    std::vector<VkDescriptorSetLayout> layouts(VulkanSync::MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
-
+    std::vector<VkDescriptorSetLayout> globalLayouts(VulkanSync::MAX_FRAMES_IN_FLIGHT, m_globalDescriptorSetLayout);
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
-    allocInfo.pSetLayouts = layouts.data();
+    allocInfo.pSetLayouts = globalLayouts.data();
 
     m_descriptorSets.resize(VulkanSync::MAX_FRAMES_IN_FLIGHT);
     if (vkAllocateDescriptorSets(device, &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
@@ -248,34 +263,61 @@ void VulkanPipeline::SetupDescriptors(const UniformBuffer *uniformBuffer, const 
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(CameraData);
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureBuffer->GetImageView();
-        imageInfo.sampler = textureBuffer->GetSampler();
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = m_descriptorSets[i];
+        write.dstBinding = 0;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write.descriptorCount = 1;
+        write.pBufferInfo = &bufferInfo;
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
+    }
 
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = m_descriptorSets[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
+    if (textureBuffer)
+    {
+        std::vector<VkDescriptorSetLayout> textureLayouts(VulkanSync::MAX_FRAMES_IN_FLIGHT, m_textureDescriptorSetLayout);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = m_descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
+        allocInfo.pSetLayouts = textureLayouts.data();
 
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = m_descriptorSets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
+        m_textureDescriptorSets.resize(VulkanSync::MAX_FRAMES_IN_FLIGHT);
+        if (vkAllocateDescriptorSets(device, &allocInfo, m_textureDescriptorSets.data()) != VK_SUCCESS)
+        {
+            POKE_CORE_ERROR("[Vulkan] Failed to allocate texture descriptor sets");
+        }
 
-        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        for (size_t i = 0; i < VulkanSync::MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = textureBuffer->GetImageView();
+            imageInfo.sampler = textureBuffer->GetSampler();
+
+            VkWriteDescriptorSet write{};
+            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet = m_textureDescriptorSets[i];
+            write.dstBinding = 0;
+            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write.descriptorCount = 1;
+            write.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
+        }
     }
 }
 
-void VulkanPipeline::BindDescriptors(VkCommandBuffer cmd, uint32_t currentFrame)
+void VulkanPipeline::BindGlobalDescriptors(VkCommandBuffer cmd, uint32_t currentFrame)
 {
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[currentFrame], 0, nullptr);
+    if (!m_descriptorSets.empty())
+    {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[currentFrame], 0, nullptr);
+    }
+
+    if (!m_textureDescriptorSets.empty())
+    {
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &m_textureDescriptorSets[currentFrame], 0, nullptr);
+    }
 }

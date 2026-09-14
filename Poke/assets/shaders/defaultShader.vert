@@ -1,6 +1,6 @@
 #version 460
 
-layout(binding = 0) uniform CameraData {
+layout(set = 0, binding = 0) uniform CameraData {
     mat4 view;
     mat4 proj;
 } ubo;
