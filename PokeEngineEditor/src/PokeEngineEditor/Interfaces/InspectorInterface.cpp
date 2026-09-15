@@ -2,7 +2,7 @@
 #include "HierarchyInterface.h"
 #include "Poke/Scene/GameObject.h"
 #include "Poke/Scene/Components/TransformComponent.h"
-#include "Poke/Scene/Components/MeshComponent.h"
+#include "Poke/Scene/Components/MeshRendererComponent.h"
 
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -28,7 +28,7 @@ void InspectorInterface::OnImGuiRender()
             }
             else if (component->GetType() == ComponentType::MESH)
             {
-                DrawMeshComponent(static_cast<MeshComponent*>(component.get()));
+                DrawMeshComponent(static_cast<MeshRendererComponent*>(component.get()));
             }
         }
     }
@@ -56,7 +56,7 @@ void InspectorInterface::DrawTransformComponent(TransformComponent *transform)
     }
 }
 
-void InspectorInterface::DrawMeshComponent(MeshComponent *mesh)
+void InspectorInterface::DrawMeshComponent(MeshRendererComponent *mesh)
 {
     if (ImGui::CollapsingHeader("MeshComponent", ImGuiTreeNodeFlags_DefaultOpen))
     {

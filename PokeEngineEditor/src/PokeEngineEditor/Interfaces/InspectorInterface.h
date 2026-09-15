@@ -6,7 +6,7 @@
 namespace Poke
 {
     class TransformComponent;
-    class MeshComponent;
+    class MeshRendererComponent;
 
     class InspectorInterface : public EditorInterface
     {
@@ -20,7 +20,7 @@ namespace Poke
 
     private:
         void DrawTransformComponent(TransformComponent *transform);
-        void DrawMeshComponent(MeshComponent *mesh);
+        void DrawMeshComponent(MeshRendererComponent *mesh);
     };
 }
 

@@ -20,7 +20,7 @@
 
 #include "Poke/Scene/EditorCamera.h"
 #include "Poke/Scene/Scene.h"
-#include "Poke/Scene/Components/MeshComponent.h"
+#include "Poke/Scene/Components/MeshRendererComponent.h"
 #include "Poke/Scene/Components/TransformComponent.h"
 
 using namespace Poke;
@@ -60,7 +60,7 @@ void EditorModule::OnInit()
 
     for (auto &child : m_shibaEntity->GetChildren())
     {
-        if (auto *mesh = child->GetComponent<MeshComponent>())
+        if (auto *mesh = child->GetComponent<MeshRendererComponent>())
         {
             mesh->SetMaterial(m_materialS);
         }
@@ -68,7 +68,7 @@ void EditorModule::OnInit()
 
     for (auto &child : m_fireEntity->GetChildren())
     {
-        if (auto *mesh = child->GetComponent<MeshComponent>())
+        if (auto *mesh = child->GetComponent<MeshRendererComponent>())
         {
             mesh->SetMaterial(m_materialF);
         }
@@ -154,7 +154,7 @@ void EditorModule::RenderWorld(VkCommandBuffer cmd)
 
     for (GameObject *entity : entities)
     {
-        auto *meshComp = entity->GetComponent<MeshComponent>();
+        auto *meshComp = entity->GetComponent<MeshRendererComponent>();
         if (!meshComp)
             continue;
 

@@ -6,7 +6,7 @@
 
 #include "Poke/Core/Log.h"
 #include "Poke/Scene/GameObject.h"
-#include "Poke/Scene/Components/MeshComponent.h"
+#include "Poke/Scene/Components/MeshRendererComponent.h"
 #include "Poke/Scene/Components/TransformComponent.h"
 
 namespace std
@@ -75,7 +75,7 @@ void MeshImporter::ProcessNode(aiNode *node, const aiScene *scene, GameObject *p
     {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         std::shared_ptr<Mesh> parsedMesh = ProcessMesh(mesh, scene);
-        currentObject->AddComponent<MeshComponent>(parsedMesh);
+        currentObject->AddComponent<MeshRendererComponent>(parsedMesh);
     }
 
     for (unsigned int i = 0; i < node->mNumChildren; ++i)

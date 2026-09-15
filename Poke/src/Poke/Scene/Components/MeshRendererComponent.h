@@ -8,11 +8,11 @@
 
 namespace Poke
 {
-    class MeshComponent : public Component
+    class MeshRendererComponent : public Component
     {
     public:
-        MeshComponent(GameObject *owner, std::shared_ptr<Mesh> mesh = nullptr, std::shared_ptr<Material> material = nullptr);
-        ~MeshComponent() override = default;
+        MeshRendererComponent(GameObject *owner, std::shared_ptr<Mesh> mesh = nullptr, std::shared_ptr<Material> material = nullptr);
+        ~MeshRendererComponent() override = default;
 
         void SetMesh(std::shared_ptr<Mesh> mesh) { m_mesh = mesh; }
         std::shared_ptr<Mesh> GetMesh() const { return m_mesh; }

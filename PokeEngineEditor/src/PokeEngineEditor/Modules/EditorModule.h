@@ -12,7 +12,7 @@ namespace Poke
     class Mesh;
     class Scene;
     class GameObject;
-    class MeshComponent;
+    class MeshRendererComponent;
     class UniformBuffer;
     class VulkanPipeline;
     class Texture;
