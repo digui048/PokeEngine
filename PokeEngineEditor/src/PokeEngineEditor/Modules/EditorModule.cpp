@@ -16,12 +16,12 @@
 #include "Poke/Render/Vulkan/VulkanTexture.h"
 #include "Poke/Importers/MeshImporter.h"
 #include "Poke/Importers/TextureImporter.h"
+#include "Poke/Importers/MaterialImporter.h"
 
 #include "Poke/Scene/EditorCamera.h"
 #include "Poke/Scene/Scene.h"
 #include "Poke/Scene/Components/MeshComponent.h"
 #include "Poke/Scene/Components/TransformComponent.h"
-#include "Poke/Resources/Mesh.h"
 
 using namespace Poke;
 
@@ -40,6 +40,9 @@ void EditorModule::OnInit()
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
     MeshImporter::LoadHierarchy("Poke/assets/shiba.fbx", m_shibaEntity);
 
+    m_fireEntity = m_scene->CreateGameObject("Fire");
+    MeshImporter::LoadHierarchy("Poke/assets/fire.fbx", m_fireEntity);
+
     VkPushConstantRange pushConstantRange;
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
@@ -47,10 +50,29 @@ void EditorModule::OnInit()
     std::vector<VkPushConstantRange> pushConstantRanges{pushConstantRange};
 
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
+    m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer());
 
-    m_texture = TextureImporter::LoadTexture("Poke/assets/default_Base_Color.png");
+    m_textureS = TextureImporter::LoadTexture("Poke/assets/default_Base_Color.png");
+    m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
 
-    m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer(), m_texture->GetVulkanTexture());
+    m_textureF = TextureImporter::LoadTexture("Poke/assets/Texture_Medieval.png");
+    m_materialF = MaterialImporter::LoadMaterial(m_textureF, m_defaultPipeline.get());
+
+    for (auto &child : m_shibaEntity->GetChildren())
+    {
+        if (auto *mesh = child->GetComponent<MeshComponent>())
+        {
+            mesh->SetMaterial(m_materialS);
+        }
+    }
+
+    for (auto &child : m_fireEntity->GetChildren())
+    {
+        if (auto *mesh = child->GetComponent<MeshComponent>())
+        {
+            mesh->SetMaterial(m_materialF);
+        }
+    }
 
     int w, h;
     Application::GetInstance().GetWindow()->GetWindowSize(w, h);
@@ -99,7 +121,10 @@ void EditorModule::OnShutdown()
     }
     m_Interfaces.clear();
     m_scene->OnShutdown();
-    m_texture.reset();
+    m_textureS.reset();
+    m_materialS.reset();
+    m_textureF.reset();
+    m_materialF.reset();
     m_defaultPipeline.reset();
 }
 
@@ -137,7 +162,9 @@ void EditorModule::RenderWorld(VkCommandBuffer cmd)
         if (!mesh)
             continue;
 
-        Renderer::SubmitRenderItem(mesh, entity->GetTransform()->GetWorldTransform());
+        auto material = meshComp->GetMaterial();
+
+        Renderer::SubmitRenderItem(mesh, material, entity->GetTransform()->GetWorldTransform());
     }
 
     Renderer::FlushQueue(cmd, m_defaultPipeline);

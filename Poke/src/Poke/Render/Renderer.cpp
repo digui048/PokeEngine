@@ -11,6 +11,7 @@
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 #include "Poke/Render/UniformBuffer.h"
 #include "Poke/Resources/Mesh.h"
+#include "Poke/Resources/Material.h"
 
 using namespace Poke;
 
@@ -86,11 +87,11 @@ void Renderer::UpdateCameraBuffer(const glm::mat4 &view, const glm::mat4 &projec
     s_defaultUniformBuffer->SetData(&cam);
 }
 
-void Renderer::SubmitRenderItem(std::shared_ptr<Mesh> mesh, const glm::mat4 &transform)
+void Renderer::SubmitRenderItem(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, const glm::mat4 &transform)
 {
     if (!mesh)
         return;
-    s_renderQueue.push_back({mesh, transform});
+    s_renderQueue.push_back({mesh, material, transform});
 }
 
 void Renderer::FlushQueue(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline> &pipeline)
@@ -101,6 +102,10 @@ void Renderer::FlushQueue(VkCommandBuffer cmdBuffer, const std::shared_ptr<Vulka
     for (const auto &item : s_renderQueue)
     {
         pipeline->PushConstants(cmdBuffer, VK_SHADER_STAGE_VERTEX_BIT, item.transform);
+        if (item.material && item.material->GetVulkanMaterial())
+        {
+            item.material->Bind(cmdBuffer, pipeline->GetPipelineLayout());
+        }
         item.mesh->Bind(cmdBuffer);
         vkCmdDrawIndexed(cmdBuffer, static_cast<uint32_t>(item.mesh->GetIndices().size()), 1, 0, 0, 0);
     }

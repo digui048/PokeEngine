@@ -14,10 +14,12 @@ namespace Poke
     class VulkanPipeline;
     class UniformBuffer;
     class Mesh;
+    class Material;
 
     struct RenderItem
     {
         std::shared_ptr<Mesh> mesh;
+        std::shared_ptr<Material> material;
         glm::mat4 transform;
     };
 
@@ -40,7 +42,7 @@ namespace Poke
         static void SetClearColor(const float r, const float g, const float b, const float a);
 
         static void UpdateCameraBuffer(const glm::mat4 &view, const glm::mat4 &projection);
-        static void SubmitRenderItem(std::shared_ptr<Mesh> mesh, const glm::mat4 &transform);
+        static void SubmitRenderItem(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material>, const glm::mat4 &transform);
         static void FlushQueue(VkCommandBuffer cmdBuffer, const std::shared_ptr<VulkanPipeline> &pipeline);
 
         static VulkanContext &GetContext() { return *s_Context; }

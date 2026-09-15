@@ -16,6 +16,7 @@ namespace Poke
     class UniformBuffer;
     class VulkanPipeline;
     class Texture;
+    class Material;
 
     class EditorModule : public Module
     {
@@ -47,8 +48,13 @@ namespace Poke
 
         std::unique_ptr<Scene> m_scene;
         GameObject *m_shibaEntity;
+        GameObject *m_fireEntity;
 
-        std::shared_ptr<Texture> m_texture;
+        std::shared_ptr<Texture> m_textureS;
+        std::shared_ptr<Material> m_materialS;
+
+        std::shared_ptr<Texture> m_textureF;
+        std::shared_ptr<Material> m_materialF;
 
         std::shared_ptr<VulkanPipeline> m_defaultPipeline;
     };
