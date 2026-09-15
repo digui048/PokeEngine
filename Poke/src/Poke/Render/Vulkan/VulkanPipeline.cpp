@@ -222,7 +222,7 @@ void Poke::VulkanPipeline::Shutdown(VulkanDevice &device)
     }
 }
 
-void VulkanPipeline::SetupGlobalDescriptors(const UniformBuffer *uniformBuffer, const VulkanTexture *textureBuffer)
+void VulkanPipeline::SetupGlobalDescriptors(const UniformBuffer *uniformBuffer)
 {
     VkDevice device = Renderer::GetContext().GetDevice().GetHandle();
 
@@ -230,13 +230,13 @@ void VulkanPipeline::SetupGlobalDescriptors(const UniformBuffer *uniformBuffer, 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
+    poolSizes[1].descriptorCount = 100;
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT * 2);
+    poolInfo.maxSets = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT + 100);
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
     {
@@ -273,40 +273,6 @@ void VulkanPipeline::SetupGlobalDescriptors(const UniformBuffer *uniformBuffer, 
 
         vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
     }
-
-    if (textureBuffer)
-    {
-        std::vector<VkDescriptorSetLayout> textureLayouts(VulkanSync::MAX_FRAMES_IN_FLIGHT, m_textureDescriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanSync::MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = textureLayouts.data();
-
-        m_textureDescriptorSets.resize(VulkanSync::MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(device, &allocInfo, m_textureDescriptorSets.data()) != VK_SUCCESS)
-        {
-            POKE_CORE_ERROR("[Vulkan] Failed to allocate texture descriptor sets");
-        }
-
-        for (size_t i = 0; i < VulkanSync::MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureBuffer->GetImageView();
-            imageInfo.sampler = textureBuffer->GetSampler();
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet = m_textureDescriptorSets[i];
-            write.dstBinding = 0;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            write.descriptorCount = 1;
-            write.pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
-        }
-    }
 }
 
 void VulkanPipeline::BindGlobalDescriptors(VkCommandBuffer cmd, uint32_t currentFrame)
@@ -314,10 +280,5 @@ void VulkanPipeline::BindGlobalDescriptors(VkCommandBuffer cmd, uint32_t current
     if (!m_descriptorSets.empty())
     {
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[currentFrame], 0, nullptr);
-    }
-
-    if (!m_textureDescriptorSets.empty())
-    {
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &m_textureDescriptorSets[currentFrame], 0, nullptr);
     }
 }
