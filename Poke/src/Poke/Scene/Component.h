@@ -9,7 +9,7 @@ namespace Poke
     {
         NONE = 0,
         TRANSFORM,
-        MESH,
+        MESH_RENDERER,
     };
 
     class Component

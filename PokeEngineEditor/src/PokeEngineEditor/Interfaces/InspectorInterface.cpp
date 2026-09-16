@@ -26,7 +26,7 @@ void InspectorInterface::OnImGuiRender()
             {
                 DrawTransformComponent(static_cast<TransformComponent*>(component.get()));
             }
-            else if (component->GetType() == ComponentType::MESH)
+            else if (component->GetType() == ComponentType::MESH_RENDERER)
             {
                 DrawMeshComponent(static_cast<MeshRendererComponent*>(component.get()));
             }
