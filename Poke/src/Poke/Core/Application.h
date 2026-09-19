@@ -27,6 +27,8 @@ namespace Poke
 
         void ForceQuit();
 
+        void SwitchModule(std::shared_ptr<Module> newModule);
+
     protected:
         virtual void OnInit() {}
         virtual void OnUpdate(float dt) {}
@@ -42,6 +44,7 @@ namespace Poke
         bool m_Running = true;
 
         std::vector<std::shared_ptr<Module>> m_modules;
+        std::shared_ptr<Module> m_pendingModule;
     };
 }
 

@@ -33,6 +33,8 @@ Application::Application()
     Renderer::Init(*m_window);
 
     m_imguiManager = std::make_unique<ImGuiManager>();
+
+    m_pendingModule = nullptr;
 }
 
 Application::~Application() = default;
@@ -83,6 +85,16 @@ void Application::Run()
 
             Renderer::EndFrame(*m_window);
         }
+
+        if (m_pendingModule)
+        {
+            Renderer::WaitIdle();
+            
+            ClearModules();
+            PushModule(m_pendingModule);
+
+            m_pendingModule = nullptr;
+        }
     }
 
     Renderer::WaitIdle();
@@ -113,9 +125,14 @@ void Application::ClearModules()
     m_modules.clear();
 }
 
-void Poke::Application::ForceQuit()
+void Application::ForceQuit()
 {
     m_Running = false;
+}
+
+void Application::SwitchModule(std::shared_ptr<Module> newModule)
+{
+    m_pendingModule = newModule;
 }
 
 void Application::PollEvents()

@@ -5,6 +5,8 @@
 
 #include <memory>
 #include <vector>
+#include <string>
+#include <filesystem>
 
 namespace Poke
 {
@@ -21,7 +23,7 @@ namespace Poke
     class EditorModule : public Module
     {
     public:
-        EditorModule();
+        EditorModule(const std::string& projectName, const std::filesystem::path& projectDir);
         ~EditorModule() override;
 
         void OnInit() override;
@@ -45,16 +47,14 @@ namespace Poke
 
     private:
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
+        std::string m_projectName;
+        std::filesystem::path m_projectDir;
 
         std::unique_ptr<Scene> m_scene;
         GameObject *m_shibaEntity;
-        GameObject *m_fireEntity;
 
         std::shared_ptr<Texture> m_textureS;
         std::shared_ptr<Material> m_materialS;
-
-        std::shared_ptr<Texture> m_textureF;
-        std::shared_ptr<Material> m_materialF;
 
         std::shared_ptr<VulkanPipeline> m_defaultPipeline;
     };

@@ -25,7 +25,11 @@
 
 using namespace Poke;
 
-EditorModule::EditorModule() = default;
+EditorModule::EditorModule(const std::string &projectName, const std::filesystem::path& projectDir)
+    : m_projectName(projectName), m_projectDir(projectDir)
+{
+}
+
 EditorModule::~EditorModule() = default;
 
 void EditorModule::OnInit()
@@ -38,10 +42,7 @@ void EditorModule::OnInit()
     AddInterface<MainMenuBarInterface>();
 
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
-    MeshImporter::LoadHierarchy("Poke/assets/shiba.fbx", m_shibaEntity);
-
-    m_fireEntity = m_scene->CreateGameObject("Fire");
-    MeshImporter::LoadHierarchy("Poke/assets/fire.fbx", m_fireEntity);
+    MeshImporter::LoadHierarchy((m_projectDir / "shiba.fbx").string(), m_shibaEntity);
 
     VkPushConstantRange pushConstantRange;
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -52,25 +53,14 @@ void EditorModule::OnInit()
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
     m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer());
 
-    m_textureS = TextureImporter::LoadTexture("Poke/assets/default_Base_Color.png");
+    m_textureS = TextureImporter::LoadTexture((m_projectDir / "default_Base_Color.png").string());
     m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
-
-    m_textureF = TextureImporter::LoadTexture("Poke/assets/Texture_Medieval.png");
-    m_materialF = MaterialImporter::LoadMaterial(m_textureF, m_defaultPipeline.get());
 
     for (auto &child : m_shibaEntity->GetChildren())
     {
         if (auto *mesh = child->GetComponent<MeshRendererComponent>())
         {
             mesh->SetMaterial(m_materialS);
-        }
-    }
-
-    for (auto &child : m_fireEntity->GetChildren())
-    {
-        if (auto *mesh = child->GetComponent<MeshRendererComponent>())
-        {
-            mesh->SetMaterial(m_materialF);
         }
     }
 
@@ -123,8 +113,6 @@ void EditorModule::OnShutdown()
     m_scene->OnShutdown();
     m_textureS.reset();
     m_materialS.reset();
-    m_textureF.reset();
-    m_materialF.reset();
     m_defaultPipeline.reset();
 }
 
