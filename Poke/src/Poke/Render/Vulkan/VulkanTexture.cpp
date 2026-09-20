@@ -18,7 +18,12 @@ VulkanTexture::VulkanTexture(const void *pixels, uint32_t width, uint32_t height
     m_height = height;
     m_format = format;
 
-    VkDeviceSize imageSize = m_width * m_height * 4;
+    uint32_t bytesForPixel = 4;
+    if (format == VK_FORMAT_R8_UNORM)
+        bytesForPixel = 1;
+    else if (format == VK_FORMAT_R8G8_UNORM)
+        bytesForPixel = 2;
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(m_width) * m_height * bytesForPixel;
 
     VulkanContext &context = Renderer::GetContext();
     VkDevice device = context.GetDevice().GetHandle();
