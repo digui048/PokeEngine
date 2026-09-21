@@ -4,6 +4,8 @@
 #include "Poke/Render/Vulkan/VulkanContext.h"
 #include "Poke/Core/Log.h"
 
+#include <backends/imgui_impl_vulkan.h>
+
 using namespace Poke;
 
 VulkanTexture::VulkanTexture(const void *pixels, uint32_t width, uint32_t height, VkFormat format)
@@ -58,6 +60,11 @@ void VulkanTexture::Shutdown()
 {
     VkDevice device = Renderer::GetContext().GetDevice().GetHandle();
 
+    if (m_descriptorSet != VK_NULL_HANDLE)
+    {
+        ImGui_ImplVulkan_RemoveTexture(m_descriptorSet);
+        m_descriptorSet = VK_NULL_HANDLE;
+    }
     if (m_sampler != VK_NULL_HANDLE)
     {
         vkDestroySampler(device, m_sampler, nullptr);
@@ -78,6 +85,15 @@ void VulkanTexture::Shutdown()
         vkFreeMemory(device, m_imageMemory, nullptr);
         m_imageMemory = VK_NULL_HANDLE;
     }
+}
+
+VkDescriptorSet Poke::VulkanTexture::GetDescriptorSet()
+{
+    if (m_descriptorSet == VK_NULL_HANDLE && m_imageView != VK_NULL_HANDLE && m_sampler != VK_NULL_HANDLE)
+    {
+        m_descriptorSet = ImGui_ImplVulkan_AddTexture(m_sampler,m_imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+    return m_descriptorSet;
 }
 
 void VulkanTexture::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)

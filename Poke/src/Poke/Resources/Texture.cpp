@@ -22,3 +22,8 @@ Texture::~Texture()
 {
     m_vulkanTexture.reset();
 }
+
+ImTextureID Texture::GetImGuiTextureID() const
+{
+    return m_vulkanTexture->GetImGuiTextureID();
+}

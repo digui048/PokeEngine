@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <imgui.h>
 
 namespace Poke
 {
@@ -19,6 +20,7 @@ namespace Poke
         const uint32_t GetHeight() const { return m_height; }
         const std::vector<uint8_t> &GetPixels() const { return m_pixels; }
 
+        ImTextureID GetImGuiTextureID() const;
         const VulkanTexture *GetVulkanTexture() const { return m_vulkanTexture.get(); }
 
     private:

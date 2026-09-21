@@ -3,6 +3,7 @@
 
 #include <vulkan/vulkan.h>
 #include <string>
+#include <imgui.h>
 
 namespace Poke
 {
@@ -19,6 +20,9 @@ namespace Poke
         VkImageView GetImageView() const { return m_imageView; }
         VkSampler GetSampler() const { return m_sampler; }
 
+        VkDescriptorSet GetDescriptorSet();
+        ImTextureID GetImGuiTextureID() { return (ImTextureID)GetDescriptorSet(); }
+
     private:
         void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
         void CreateImageView();
@@ -34,6 +38,8 @@ namespace Poke
         VkFormat m_format = VK_FORMAT_R8G8B8A8_SRGB;
         VkImageView m_imageView = VK_NULL_HANDLE;
         VkSampler m_sampler = VK_NULL_HANDLE;
+
+        VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
 
         uint32_t m_width = 0;
         uint32_t m_height = 0;
