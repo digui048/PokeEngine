@@ -89,7 +89,7 @@ void Application::Run()
         if (m_pendingModule)
         {
             Renderer::WaitIdle();
-            
+
             ClearModules();
             PushModule(m_pendingModule);
 
@@ -158,6 +158,18 @@ void Application::PollEvents()
             EditorCamera::Get().OnMouseScroll(sdlEvent.wheel.y);
             break;
 
+        case SDL_EVENT_DROP_FILE:
+        {
+            const char *path = sdlEvent.drop.data;
+            float x = sdlEvent.drop.x;
+            float y = sdlEvent.drop.y;
+            POKE_CORE_INFO("File dropped: {0}", path);
+            for (auto &module : m_modules)
+            {
+                module->OnFileDropped(path, x, y);
+            }
+            break;
+        }
         default:
             break;
         }
