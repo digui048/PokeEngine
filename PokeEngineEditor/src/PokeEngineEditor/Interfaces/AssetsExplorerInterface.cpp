@@ -1,4 +1,5 @@
 #include "AssetsExplorerInterface.h"
+#include "Poke/Core/Log.h"
 
 #include "Poke/Importers/TextureImporter.h"
 
@@ -34,6 +35,10 @@ void AssetsExplorerInterface::OnImGuiRender()
         return;
 
     ImGui::Begin(m_name.c_str(), &m_isOpen);
+
+    m_windowPos = ImGui::GetWindowPos();
+    m_windowSize = ImGui::GetWindowSize();
+    m_isHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 
     if (m_currentDirectory != m_assetsDirectory)
     {
@@ -99,4 +104,28 @@ void AssetsExplorerInterface::OnImGuiRender()
     }
 
     ImGui::End();
+}
+
+void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
+{
+    if (!IsInside(x, y) || !path)
+        return;
+
+    std::filesystem::path sourcePath(path);
+    std::filesystem::path destinationPath = m_currentDirectory / sourcePath.filename();
+    
+    if (std::filesystem::exists(destinationPath))
+    {
+        POKE_ERROR("File already exists: {0}", destinationPath.string());
+        return;
+    }
+
+    try
+    {
+        std::filesystem::copy_file(sourcePath, destinationPath);
+    }
+    catch(const std::filesystem::filesystem_error &e)
+    {
+        POKE_ERROR("Failed to copy file: {0}", e.what());
+    }
 }

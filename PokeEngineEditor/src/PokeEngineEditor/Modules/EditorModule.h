@@ -32,12 +32,25 @@ namespace Poke
         void OnImGuiRender() override;
         void OnShutdown() override;
 
+        void OnFileDropped(const char* path, float x, float y) override;
+
         template <typename T, typename... Args>
         void AddInterface(Args &&...args)
         {
             auto interface = std::make_shared<T>(std::forward<Args>(args)...);
             interface->OnInit();
             m_Interfaces.push_back(interface);
+        }
+
+        template<typename T>
+        T* GetInterface()
+        {
+            for (auto &interface : m_Interfaces)
+            {
+                if (T *typedInterface = dynamic_cast<T *>(interface.get()))
+                    return typedInterface;
+            }
+            return nullptr;
         }
 
         void RenderWorld(VkCommandBuffer cmd);

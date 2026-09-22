@@ -118,6 +118,15 @@ void EditorModule::OnShutdown()
     m_defaultPipeline.reset();
 }
 
+void EditorModule::OnFileDropped(const char *path, float x, float y)
+{
+    auto* assetInterface = GetInterface<AssetsExplorerInterface>();
+    if (assetInterface)
+    {
+        assetInterface->OnFileDropped(path, x, y);
+    }
+}
+
 void EditorModule::RenderWorld(VkCommandBuffer cmd)
 {
     if (!m_scene || !m_scene->GetRoot())

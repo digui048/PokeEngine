@@ -2,6 +2,7 @@
 #define EDITOR_INTERFACE_H
 
 #include <string>
+#include <imgui.h>
 
 namespace Poke
 {
@@ -18,10 +19,21 @@ namespace Poke
 
         const std::string &GetName() const { return m_name; }
         bool &IsOpen() { return m_isOpen; }
+        bool IsHovered() const { return m_isHovered; }
 
-    protected:
+        bool IsInside(float x, float y)
+        {
+            return x >= m_windowPos.x && x <= (m_windowPos.x + m_windowSize.x) &&
+                   y >= m_windowPos.y && y <= (m_windowPos.y + m_windowSize.y);
+        }
+
+    protected: 
         std::string m_name;
         bool m_isOpen = true;
+        bool m_isHovered = false;
+
+        ImVec2 m_windowPos = {0.0f, 0.0f};
+        ImVec2 m_windowSize = {0.0f, 0.0f};
     };
 };
 
