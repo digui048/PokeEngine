@@ -7,6 +7,7 @@
 #include "PokeEngineEditor/Interfaces/HierarchyInterface.h"
 #include "PokeEngineEditor/Interfaces/MainMenuBarInterface.h"
 #include "PokeEngineEditor/Interfaces/InspectorInterface.h"
+#include "PokeEngineEditor/Interfaces/AssetsExplorerInterface.h"
 
 #include "Poke/Core/Application.h"
 #include "Poke/Core/Window.h"
@@ -25,7 +26,7 @@
 
 using namespace Poke;
 
-EditorModule::EditorModule(const std::string &projectName, const std::filesystem::path& projectDir)
+EditorModule::EditorModule(const std::string &projectName, const std::filesystem::path &projectDir)
     : m_projectName(projectName), m_projectDir(projectDir)
 {
 }
@@ -40,9 +41,10 @@ void EditorModule::OnInit()
     AddInterface<HierarchyInterface>(m_scene.get());
     AddInterface<InspectorInterface>();
     AddInterface<MainMenuBarInterface>();
+    AddInterface<AssetsExplorerInterface>(m_projectDir);
 
     m_shibaEntity = m_scene->CreateGameObject("Shiba");
-    MeshImporter::LoadHierarchy((m_projectDir / "shiba.fbx").string(), m_shibaEntity);
+    MeshImporter::LoadHierarchy((m_projectDir / "Assets/shiba.fbx").string(), m_shibaEntity);
 
     VkPushConstantRange pushConstantRange;
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -53,7 +55,7 @@ void EditorModule::OnInit()
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
     m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer());
 
-    m_textureS = TextureImporter::LoadTexture((m_projectDir / "default_Base_Color.png").string());
+    m_textureS = TextureImporter::LoadTexture((m_projectDir / "Assets/default_Base_Color.png").string());
     m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
 
     for (auto &child : m_shibaEntity->GetChildren())
