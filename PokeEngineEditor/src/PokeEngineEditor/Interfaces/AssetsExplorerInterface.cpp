@@ -66,33 +66,79 @@ void AssetsExplorerInterface::OnImGuiRender()
 
     if (std::filesystem::exists(m_currentDirectory))
     {
+        std::filesystem::path pathToDelete = "";
+        bool isDirectoryToDelete = false;
+
         for (auto &directoryEntry : std::filesystem::directory_iterator(m_currentDirectory))
         {
             const auto &path = directoryEntry.path();
             std::string filenameString = path.filename().string();
+            bool isDirectory = directoryEntry.is_directory();
 
             ImGui::PushID(filenameString.c_str());
+            ImGui::BeginGroup();
             Texture *icon = directoryEntry.is_directory() ? m_directoryIcon.get() : m_fileIcon.get();
             ImTextureID textureID = icon ? icon->GetImGuiTextureID() : (ImTextureID)0;
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+            bool isSelected = (s_selectedFile == path);
+            if (isSelected)
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.8f, 0.5f));
+            else
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
             if (ImGui::ImageButton("##icon", textureID, {thumbnailSize, thumbnailSize}, {0, 0}, {1, 1}))
             {
                 s_selectedFile = path;
             }
 
+            ImGui::PopStyleColor();
+            ImGui::TextWrapped("%s", filenameString.c_str());
+            ImGui::EndGroup();
+
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
-                if (directoryEntry.is_directory())
+                if (isDirectory)
                 {
                     m_currentDirectory /= path.filename();
                 }
             }
 
-            ImGui::PopStyleColor();
+            if (ImGui::BeginPopupContextItem("##context"))
+            {
+                s_selectedFile = path;
+                if (ImGui::MenuItem("Delete"))
+                {
+                    pathToDelete = path;
+                    isDirectoryToDelete = isDirectory;
+                }
+                ImGui::EndPopup();
+            }
 
-            ImGui::TextWrapped("%s", filenameString.c_str());
+            if (isSelected && ImGui::IsKeyPressed(ImGuiKey_Delete))
+            {
+                pathToDelete = path;
+                isDirectoryToDelete = isDirectory;
+            }
+
             ImGui::NextColumn();
             ImGui::PopID();
+        }
+
+        if (!pathToDelete.empty())
+        {
+            if (isDirectoryToDelete)
+            {
+                RemoveDirectory(pathToDelete.string().c_str());
+            }
+            else
+            {
+                RemoveFile(pathToDelete.string().c_str());
+            }
+
+            if (s_selectedFile == pathToDelete)
+            {
+                s_selectedFile.clear();
+            }
         }
     }
 
@@ -113,7 +159,7 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
 
     std::filesystem::path sourcePath(path);
     std::filesystem::path destinationPath = m_currentDirectory / sourcePath.filename();
-    
+
     if (std::filesystem::exists(destinationPath))
     {
         POKE_ERROR("File already exists: {0}", destinationPath.string());
@@ -124,8 +170,40 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
     {
         std::filesystem::copy_file(sourcePath, destinationPath);
     }
-    catch(const std::filesystem::filesystem_error &e)
+    catch (const std::filesystem::filesystem_error &e)
     {
         POKE_ERROR("Failed to copy file: {0}", e.what());
+    }
+}
+
+void AssetsExplorerInterface::RemoveDirectory(const char *path)
+{
+    if (!path)
+        return;
+
+    std::error_code ec;
+    if (std::filesystem::exists(path, ec) && std::filesystem::is_directory(path, ec))
+    {
+        std::uintmax_t deletedCount = std::filesystem::remove_all(path, ec);
+        if (ec)
+        {
+            POKE_ERROR("Failed to remove directory '{0}': {1}", path, ec.message());
+        }
+    }
+}
+
+void AssetsExplorerInterface::RemoveFile(const char *path)
+{
+    if (!path)
+        return;
+
+    std::error_code ec;
+    if (std::filesystem::exists(path, ec) && std::filesystem::is_regular_file(path, ec))
+    {
+        std::filesystem::remove(path, ec);
+        if (ec)
+        {
+            POKE_ERROR("Failed to remove file '{0}': {1}", path, ec.message());
+        }
     }
 }

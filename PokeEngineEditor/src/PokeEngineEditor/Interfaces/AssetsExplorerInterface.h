@@ -20,7 +20,11 @@ namespace Poke
         static std::filesystem::path GetSelectedFile() { return s_selectedFile; }
         static void SetSelectedFile(const std::filesystem::path &file) { s_selectedFile = file; }
 
-        void OnFileDropped(const char* path, float x, float y);
+        void OnFileDropped(const char *path, float x, float y);
+
+    private:
+        void RemoveDirectory(const char *path);
+        void RemoveFile(const char *path);
 
     private:
         std::filesystem::path m_assetsDirectory;
