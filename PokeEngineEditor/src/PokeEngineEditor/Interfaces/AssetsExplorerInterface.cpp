@@ -168,7 +168,14 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
 
     try
     {
-        std::filesystem::copy_file(sourcePath, destinationPath);
+        if (std::filesystem::is_directory(sourcePath))
+        {
+            std::filesystem::copy(sourcePath, destinationPath, std::filesystem::copy_options::recursive);
+        }
+        else if (std::filesystem::is_regular_file(sourcePath))
+        {
+            std::filesystem::copy_file(sourcePath, destinationPath);
+        }
     }
     catch (const std::filesystem::filesystem_error &e)
     {
