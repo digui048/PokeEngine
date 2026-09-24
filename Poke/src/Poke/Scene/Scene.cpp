@@ -25,13 +25,18 @@ void Scene::OnShutdown()
 
 GameObject *Scene::CreateGameObject(const std::string &name)
 {
+    return CreateGameObjectWithUUID(UUID(), name);
+}
+
+GameObject *Scene::CreateGameObjectWithUUID(UUID uuid, const std::string &name)
+{
     if (!m_rootGameObject)
     {
         OnInit();
     }
 
-    auto newGameObject = std::make_unique<GameObject>(name, m_rootGameObject.get());
-    GameObject* obj = newGameObject.get();
+    auto newGameObject = std::make_unique<GameObject>(uuid, name, m_rootGameObject.get());
+    GameObject *obj = newGameObject.get();
 
     m_rootGameObject->AddChild(std::move(newGameObject));
 

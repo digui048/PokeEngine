@@ -1,6 +1,7 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
+#include "Poke/Core/UUID.h"
 #include "Component.h"
 #include <string>
 #include <vector>
@@ -14,6 +15,7 @@ namespace Poke
     {
     public:
         GameObject(const std::string &name = "GameObject", GameObject *parent = nullptr);
+        GameObject(UUID uuid, const std::string &name = "GameObject", GameObject *parent = nullptr);
         ~GameObject() = default;
 
         TransformComponent *GetTransform() const { return m_transform; }
@@ -46,11 +48,13 @@ namespace Poke
 
         const std::vector<std::unique_ptr<Component>> &GetComponents() { return m_components; }
 
+        UUID GetUUID() const { return m_uuid; }
         const std::string &GetName() const { return m_name; }
         void SetActive(bool state) { m_active = state; }
         bool IsActive() const { return m_active; }
 
     private:
+        UUID m_uuid;
         std::string m_name;
         bool m_active = true;
 

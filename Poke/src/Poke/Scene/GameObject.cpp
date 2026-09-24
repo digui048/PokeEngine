@@ -4,7 +4,13 @@
 using namespace Poke;
 
 GameObject::GameObject(const std::string &name, GameObject *parent)
-    : m_name(name), m_parent(parent), m_active(true)
+    : m_uuid(), m_name(name), m_parent(parent), m_active(true)
+{
+    m_transform = AddComponent<TransformComponent>();
+}
+
+GameObject::GameObject(UUID uuid, const std::string &name, GameObject *parent)
+    : m_uuid(uuid), m_name(name), m_parent(parent), m_active(true)
 {
     m_transform = AddComponent<TransformComponent>();
 }

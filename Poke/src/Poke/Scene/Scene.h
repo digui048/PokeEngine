@@ -17,6 +17,7 @@ namespace Poke
         void OnShutdown();
 
         GameObject *CreateGameObject(const std::string &name);
+        GameObject *CreateGameObjectWithUUID(UUID uuid, const std::string& name);
         GameObject *GetRoot() const { return m_rootGameObject.get(); }
 
     private:
