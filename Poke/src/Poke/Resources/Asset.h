@@ -5,6 +5,8 @@
 
 namespace Poke
 {
+    using AssetHandle = UUID;
+
     enum class AssetType
     {
         None = 0,
@@ -16,9 +18,14 @@ namespace Poke
     class Asset
     {
     public:
-        UUID m_uuid;
+        virtual ~Asset() = default;
+
+        AssetHandle GetHandle() const { return m_handle; }
 
         virtual AssetType GetType() const = 0;
+
+    private:
+        AssetHandle m_handle;
     };
 }
 

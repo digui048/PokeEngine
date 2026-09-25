@@ -18,3 +18,8 @@ UUID::UUID(uint64_t uuid)
     : m_uuid(uuid)
 {
 }
+
+bool UUID::operator==(const UUID &other) const
+{
+    return m_uuid == other.m_uuid;
+}

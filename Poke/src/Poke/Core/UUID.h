@@ -5,7 +5,7 @@
 
 namespace std
 {
-    template<typename T>
+    template <typename T>
     struct hash;
 }
 
@@ -19,6 +19,7 @@ namespace Poke
         UUID(const UUID &) = default;
 
         operator uint64_t() const { return m_uuid; }
+        bool operator==(const UUID &other) const; 
 
     private:
         uint64_t m_uuid;
@@ -27,7 +28,6 @@ namespace Poke
 
 namespace std
 {
-
     template <>
     struct hash<Poke::UUID>
     {
