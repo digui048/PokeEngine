@@ -10,8 +10,8 @@
 #include "Poke/Render/Vulkan/VulkanContext.h"
 #include "Poke/Render/Vulkan/VulkanPipeline.h"
 #include "Poke/Render/UniformBuffer.h"
-#include "Poke/Resources/Mesh.h"
-#include "Poke/Resources/Material.h"
+#include "Poke/Resources/Assets/Mesh.h"
+#include "Poke/Resources/Assets/Material.h"
 
 using namespace Poke;
 

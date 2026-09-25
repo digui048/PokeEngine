@@ -1,7 +1,7 @@
 #ifndef MESH_IMPORTER_H
 #define MESH_IMPORTER_H
 
-#include "Poke/Resources/Mesh.h"
+#include "Poke/Resources/Assets/Mesh.h"
 #include <string>
 #include <memory>
 #include <assimp/Importer.hpp>

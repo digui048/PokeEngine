@@ -1,7 +1,7 @@
 #ifndef TEXTURE_IMPORTER_H
 #define TEXTURE_IMPORTER_H
 
-#include "Poke/Resources/Texture.h"
+#include "Poke/Resources/Assets/Texture.h"
 #include <string>
 #include <memory>
 

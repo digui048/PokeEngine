@@ -2,7 +2,7 @@
 #define ASSETS_EXPLORER_INTERFACE
 
 #include "EditorInterface.h"
-#include "Poke/Resources/Texture.h"
+#include "Poke/Resources/Assets/Texture.h"
 
 #include <filesystem>
 

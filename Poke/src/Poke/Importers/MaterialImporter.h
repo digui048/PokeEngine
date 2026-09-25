@@ -1,7 +1,7 @@
 #ifndef MATERIAL_IMPORTER_H
 #define MATERIAL_IMPORTER_H
 
-#include "Poke/Resources/Material.h"
+#include "Poke/Resources/Assets/Material.h"
 #include <string>
 #include <memory>
 

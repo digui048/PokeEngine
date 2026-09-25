@@ -1,6 +1,8 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "Poke/Resources/Asset.h"
+
 #include "Poke/Render/VertexBuffer.h"
 #include "Poke/Render/IndexBuffer.h"
 #include "Poke/Render/Vertex.h"
@@ -12,7 +14,7 @@
 
 namespace Poke
 {
-    class Mesh
+    class Mesh : public Asset
     {
     public:
         Mesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
@@ -22,7 +24,9 @@ namespace Poke
 
         const std::vector<Vertex> &GetVertices() const { return m_vertices; }
         const std::vector<uint16_t> &GetIndices() const { return m_indices; }
-        
+
+        AssetType GetType() const override { return AssetType::Mesh; }
+
         size_t GetVerticesCount() const { return m_vertices.size(); }
         size_t GetIndicesCount() const { return m_indices.size(); }
 

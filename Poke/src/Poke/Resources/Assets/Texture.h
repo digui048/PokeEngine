@@ -1,6 +1,8 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include "Poke/Resources/Asset.h"
+
 #include <vector>
 #include <memory>
 #include <cstdint>
@@ -10,7 +12,7 @@ namespace Poke
 {
     class VulkanTexture;
 
-    class Texture
+    class Texture : public Asset
     {
     public:
         Texture(const void *pixels, uint32_t width, uint32_t height);
@@ -19,6 +21,8 @@ namespace Poke
         const uint32_t GetWidth() const { return m_width; }
         const uint32_t GetHeight() const { return m_height; }
         const std::vector<uint8_t> &GetPixels() const { return m_pixels; }
+
+        AssetType GetType() const override { return AssetType::Texture; }
 
         ImTextureID GetImGuiTextureID() const;
         const VulkanTexture *GetVulkanTexture() const { return m_vulkanTexture.get(); }

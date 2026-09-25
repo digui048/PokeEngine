@@ -2,8 +2,8 @@
 #define MESH_COMPONENT_H
 
 #include "Poke/Scene/Component.h"
-#include "Poke/Resources/Mesh.h"
-#include "Poke/Resources/Material.h"
+#include "Poke/Resources/Assets/Mesh.h"
+#include "Poke/Resources/Assets/Material.h"
 #include <memory>
 
 namespace Poke

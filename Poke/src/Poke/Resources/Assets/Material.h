@@ -1,6 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include "Poke/Resources/Asset.h"
+
 #include <memory>
 #include <vulkan/vulkan.h>
 
@@ -10,7 +12,7 @@ namespace Poke
     class VulkanMaterial;
     class VulkanPipeline;
 
-    class Material
+    class Material : public Asset
     {
     public:
         Material(std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline);
@@ -18,6 +20,8 @@ namespace Poke
 
         void SetTexture(std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline);
         std::shared_ptr<Texture> GetTexture() const { return m_texture; }
+
+        AssetType GetType() const override { return AssetType::Material; }
 
         void Bind(VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
         const VulkanMaterial *GetVulkanMaterial() const { return m_vulkanMaterial.get(); }
