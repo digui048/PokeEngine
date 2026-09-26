@@ -9,6 +9,7 @@ namespace Poke
 {
     struct AssetMetaData
     {
+        AssetHandle handle;
         AssetType type = AssetType::None;
         std::filesystem::path filePath;
 

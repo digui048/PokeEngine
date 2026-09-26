@@ -5,7 +5,17 @@
 
 using namespace Poke;
 
+std::shared_ptr<Texture> Poke::TextureImporter::LoadTexture(const AssetMetaData &metadata)
+{
+    return LoadTexture(metadata.handle, metadata.filePath.string());
+}
+
 std::shared_ptr<Texture> TextureImporter::LoadTexture(const std::string &filepath)
+{
+    return LoadTexture(AssetHandle(), filepath);
+}
+
+std::shared_ptr<Texture> Poke::TextureImporter::LoadTexture(AssetHandle handle, const std::string &filepath)
 {
     ILuint imageID;
     ilGenImages(1, &imageID);
@@ -31,7 +41,7 @@ std::shared_ptr<Texture> TextureImporter::LoadTexture(const std::string &filepat
         return nullptr;
     }
 
-    auto texture = std::make_shared<Texture>(pixels, width, height);
+    auto texture = std::make_shared<Texture>(handle, pixels, width, height);
 
     ilDeleteImages(1, &imageID);
 
