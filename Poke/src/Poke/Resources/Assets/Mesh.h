@@ -18,6 +18,7 @@ namespace Poke
     {
     public:
         Mesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
+        Mesh(AssetHandle handle, const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
         ~Mesh() = default;
 
         void Bind(VkCommandBuffer cmdBuffer) const;

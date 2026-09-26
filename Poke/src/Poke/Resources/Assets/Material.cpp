@@ -7,6 +7,12 @@
 using namespace Poke;
 
 Material::Material(std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline)
+    : Material(AssetHandle(), texture, pipeline)
+{
+}
+
+Material::Material(AssetHandle handle, std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline)
+    : Asset(handle)
 {
     SetTexture(texture, pipeline);
 }

@@ -15,7 +15,8 @@ namespace Poke
     class Texture : public Asset
     {
     public:
-        Texture(const void *pixels, uint32_t width, uint32_t height);
+        Texture(const void *pixels, uint32_t width, uint32_t height);        
+        Texture(AssetHandle handle, const void *pixels, uint32_t width, uint32_t height);        
         ~Texture();
 
         const uint32_t GetWidth() const { return m_width; }

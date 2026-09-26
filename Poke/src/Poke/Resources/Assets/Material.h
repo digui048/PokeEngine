@@ -16,6 +16,7 @@ namespace Poke
     {
     public:
         Material(std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline);
+        Material(AssetHandle handle, std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline);
         ~Material();
 
         void SetTexture(std::shared_ptr<Texture> texture, const VulkanPipeline *pipeline);

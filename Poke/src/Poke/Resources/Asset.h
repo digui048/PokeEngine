@@ -18,6 +18,8 @@ namespace Poke
     class Asset
     {
     public:
+        Asset() = default;
+        explicit Asset(AssetHandle handle) : m_handle(handle) {}
         virtual ~Asset() = default;
 
         AssetHandle GetHandle() const { return m_handle; }

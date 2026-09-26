@@ -6,6 +6,12 @@
 using namespace Poke;
 
 Texture::Texture(const void *pixels, uint32_t width, uint32_t height)
+    : Texture(AssetHandle(), pixels, width, height)
+{
+}
+
+Texture::Texture(AssetHandle handle, const void *pixels, uint32_t width, uint32_t height)
+    : Asset(handle)
 {
     size_t imageSize = static_cast<size_t>(width) * height * 4;
 
