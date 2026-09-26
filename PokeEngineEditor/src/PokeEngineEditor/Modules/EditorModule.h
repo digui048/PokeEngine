@@ -56,9 +56,6 @@ namespace Poke
         void RenderWorld(VkCommandBuffer cmd);
 
     private:
-        void RenderEntity(VkCommandBuffer cmd, GameObject *entity);
-
-    private:
         std::vector<std::shared_ptr<EditorInterface>> m_Interfaces;
         std::string m_projectName;
         std::filesystem::path m_projectDir;
