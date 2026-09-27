@@ -11,7 +11,7 @@ Texture::Texture(const void *pixels, uint32_t width, uint32_t height)
 }
 
 Texture::Texture(AssetHandle handle, const void *pixels, uint32_t width, uint32_t height)
-    : Asset(handle)
+    : Asset(handle), m_width(width), m_height(height)
 {
     size_t imageSize = static_cast<size_t>(width) * height * 4;
 

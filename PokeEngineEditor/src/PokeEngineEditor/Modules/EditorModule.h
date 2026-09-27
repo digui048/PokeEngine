@@ -19,6 +19,7 @@ namespace Poke
     class VulkanPipeline;
     class Texture;
     class Material;
+    class EditorAssetManager;
 
     class EditorModule : public Module
     {
@@ -67,6 +68,8 @@ namespace Poke
         std::shared_ptr<Material> m_materialS;
 
         std::shared_ptr<VulkanPipeline> m_defaultPipeline;
+
+        std::unique_ptr<EditorAssetManager> m_assetManager;
     };
 }
 

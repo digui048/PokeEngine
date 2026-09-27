@@ -12,12 +12,12 @@ namespace Poke
 {
     using AssetRegistry = std::unordered_map<AssetHandle, AssetMetaData>;
     using AssetMap = std::unordered_map<AssetHandle, std::shared_ptr<Asset>>;
-    using SerializerMap = std::unordered_map<AssetType, std::shared_ptr<AssetSerializer>>;
+    using SerializerMap = std::unordered_map<AssetType, std::unique_ptr<AssetSerializer>>;
 
     class EditorAssetManager : public AssetManagerBase
     {
     public:
-        EditorAssetManager();
+        EditorAssetManager(const std::filesystem::path &projectDirectory);
         ~EditorAssetManager() override = default;
 
         std::shared_ptr<Asset> GetAsset(AssetHandle handle) override;
@@ -25,6 +25,7 @@ namespace Poke
         bool IsAssetHandleValid(AssetHandle handle) const override;
         bool IsAssetLoaded(AssetHandle handle) const override;
         AssetType GetAssetType(AssetHandle handle) const override;
+        AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
 
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
 

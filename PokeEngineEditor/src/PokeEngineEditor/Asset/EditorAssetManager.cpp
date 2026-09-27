@@ -7,8 +7,13 @@
 
 using namespace Poke;
 
-EditorAssetManager::EditorAssetManager()
+EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirectory)
 {
+    m_registryPath = projectDirectory / "Assets/AssetRegistry.json";
+    m_libraryPath = projectDirectory / "Library";
+
+    std::filesystem::create_directories(m_libraryPath);
+
     m_assetSerializers[AssetType::Texture] = std::make_unique<TextureSerializer>();
 
     DeserializeAssetRegistry();
@@ -79,6 +84,17 @@ AssetType EditorAssetManager::GetAssetType(AssetHandle handle) const
     return AssetType::None;
 }
 
+AssetHandle EditorAssetManager::GetAssetHandle(const std::filesystem::path &filePath) const
+{
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (metadata.filePath == filePath)
+            return handle;
+    }
+
+    return AssetHandle();
+}
+
 const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
 {
     if (IsAssetHandleValid(handle))
@@ -89,6 +105,48 @@ const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
 
 void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &directoryPath)
 {
+    if (!std::filesystem::exists(directoryPath))
+    {
+        POKE_WARN("[AssetManager] Directory does not exist: {0}", directoryPath.string());
+        return;
+    }
+
+    bool newAssetDiscovered = false;
+
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(directoryPath))
+    {
+        if (entry.is_directory())
+            continue;
+
+        const auto &filePath = entry.path();
+
+        if (filePath.extension() == ".meta" || filePath.filename() == "AssetRegistry.json")
+            continue;
+
+        if (!IsAssetExtension(filePath.extension()))
+            continue;
+
+        bool alreadyRegistered = false;
+        for (const auto &[handle, metadata] : m_assetRegistry)
+        {
+            if (metadata.filePath == filePath)
+            {
+                alreadyRegistered = true;
+                break;
+            }
+        }
+
+        if (!alreadyRegistered)
+        {
+            RegisterAsset(filePath);
+            newAssetDiscovered = true;
+        }
+    }
+
+    if (newAssetDiscovered)
+    {
+        SerializeAssetRegistry();
+    }
 }
 
 std::shared_ptr<Asset> EditorAssetManager::LoadAsset(const AssetMetaData &metadata)
@@ -142,7 +200,9 @@ bool EditorAssetManager::DeserializeAssetRegistry()
     }
 
     JsonNode registryNode = root["AssetRegistry"];
-    const auto &assetsJson = registryNode["Assets"].GetInternal();
+    JsonNode assetsNode = registryNode["Assets"];
+
+    const auto& assetsJson = assetsNode.GetInternal();
 
     if (!assetsJson.is_array())
     {
@@ -183,7 +243,7 @@ std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &met
         extension = ".mesh";
         break;
     case AssetType::Material:
-        extension = ".tex";
+        extension = ".mat";
         break;
     default:
         extension = ".bin";

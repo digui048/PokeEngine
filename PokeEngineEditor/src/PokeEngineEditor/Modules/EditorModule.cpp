@@ -9,6 +9,8 @@
 #include "PokeEngineEditor/Interfaces/InspectorInterface.h"
 #include "PokeEngineEditor/Interfaces/AssetsExplorerInterface.h"
 
+#include "PokeEngineEditor/Asset/EditorAssetManager.h"
+
 #include "Poke/Core/Application.h"
 #include "Poke/Core/Window.h"
 
@@ -35,6 +37,9 @@ EditorModule::~EditorModule() = default;
 
 void EditorModule::OnInit()
 {
+    m_assetManager = std::make_unique<EditorAssetManager>(m_projectDir);
+    m_assetManager->ScanDirectoryAssets(m_projectDir / "Assets");
+
     m_scene = std::make_unique<Scene>();
     m_scene->OnInit();
 
@@ -55,7 +60,14 @@ void EditorModule::OnInit()
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
     m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer());
 
-    m_textureS = TextureImporter::LoadTexture((m_projectDir / "Assets/default_Base_Color.png").string());
+    //m_textureS = TextureImporter::LoadTexture((m_projectDir / "Assets/default_Base_Color.png").string());
+    std::filesystem::path texturePath = m_projectDir / "Assets/default_Base_Color.png";
+    AssetHandle textureHandle = m_assetManager->GetAssetHandle(texturePath);
+    if (m_assetManager->GetAssetType(textureHandle) == AssetType::Texture)
+    {
+        m_textureS = std::static_pointer_cast<Texture>(m_assetManager->GetAsset(textureHandle));
+    }
+
     m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
 
     for (auto &child : m_shibaEntity->GetChildren())
@@ -120,7 +132,7 @@ void EditorModule::OnShutdown()
 
 void EditorModule::OnFileDropped(const char *path, float x, float y)
 {
-    auto* assetInterface = GetInterface<AssetsExplorerInterface>();
+    auto *assetInterface = GetInterface<AssetsExplorerInterface>();
     if (assetInterface)
     {
         assetInterface->OnFileDropped(path, x, y);
