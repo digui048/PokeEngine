@@ -2,13 +2,14 @@
 
 #include "Poke/Importers/AssetImporter.h"
 #include "Poke/Serializers/TextureSerializer.h"
+#include "Poke/Utils/Json.h"
 #include "Poke/Core/Log.h"
 
 using namespace Poke;
 
 EditorAssetManager::EditorAssetManager()
 {
-    m_assetSerializers[AssetType::Texture] =std::make_unique<TextureSerializer>();
+    m_assetSerializers[AssetType::Texture] = std::make_unique<TextureSerializer>();
 
     DeserializeAssetRegistry();
 }
@@ -109,12 +110,65 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
     return metadata.handle;
 }
 
-void EditorAssetManager::SerializeAssetRegistry()
+bool EditorAssetManager::SerializeAssetRegistry()
 {
+    JsonNode root;
+    JsonNode registryNode;
+
+    auto &assetsArray = registryNode.GetInternal()["Assets"] = nlohmann::json::array();
+
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        JsonNode item;
+        item.Set("Handle", static_cast<uint64_t>(metadata.handle));
+        item.Set("Type", AssetTypeToString(metadata.type));
+        item.Set("FilePath", metadata.filePath.string());
+
+        assetsArray.push_back(item.GetInternal());
+    }
+
+    root.GetInternal()["AssetRegistry"] = registryNode.GetInternal();
+
+    return Json::SaveToFile(root, m_registryPath);
 }
 
-void EditorAssetManager::DeserializeAssetRegistry()
+bool EditorAssetManager::DeserializeAssetRegistry()
 {
+    JsonNode root = Json::LoadFromFile(m_registryPath);
+    if (!root.HasKey("AssetRegistry"))
+    {
+        POKE_CORE_WARN("[EditorAssetManager] Could not find AssetRegistry key in {0}", m_registryPath.string());
+        return false;
+    }
+
+    JsonNode registryNode = root["AssetRegistry"];
+    const auto &assetsJson = registryNode["Assets"].GetInternal();
+
+    if (!assetsJson.is_array())
+    {
+        POKE_CORE_WARN("[EditorAssetManager] Assets node is not an array in {0}", m_registryPath.string());
+        return false;
+    }
+
+    m_assetRegistry.clear();
+
+    for (const auto &itemJson : assetsJson)
+    {
+        JsonNode item(itemJson);
+
+        AssetMetaData metadata;
+        metadata.handle = AssetHandle(item.Get<uint64_t>("Handle", 0));
+        metadata.type = AssetTypeFromString(item.Get<std::string>("Type", "None"));
+        metadata.filePath = std::filesystem::path(item.Get<std::string>("FilePath", ""));
+
+        if (metadata)
+        {
+            m_assetRegistry[metadata.handle] = metadata;
+        }
+    }
+
+    POKE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
+    return true;
 }
 
 std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &metadata) const
@@ -122,10 +176,18 @@ std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &met
     std::string extension;
     switch (metadata.type)
     {
-        case AssetType::Texture:    extension = ".tex";  break;
-        case AssetType::Mesh:       extension = ".mesh"; break;
-        case AssetType::Material:   extension = ".tex";  break;
-        default:                    extension = ".bin";  break;
+    case AssetType::Texture:
+        extension = ".tex";
+        break;
+    case AssetType::Mesh:
+        extension = ".mesh";
+        break;
+    case AssetType::Material:
+        extension = ".tex";
+        break;
+    default:
+        extension = ".bin";
+        break;
     }
 
     return m_libraryPath / (std::to_string(static_cast<uint64_t>(metadata.handle)) + extension);
@@ -138,8 +200,10 @@ bool EditorAssetManager::IsAssetExtension(const std::filesystem::path &extension
 
 AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::path &extension) const
 {
-    if (extension == ".png" || extension == ".jpg") return AssetType::Texture;
-    if (extension == ".fbx")                        return AssetType::Mesh;
+    if (extension == ".png" || extension == ".jpg")
+        return AssetType::Texture;
+    if (extension == ".fbx")
+        return AssetType::Mesh;
 
     return AssetType::None;
 }

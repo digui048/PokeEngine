@@ -32,8 +32,8 @@ namespace Poke
         std::shared_ptr<Asset> LoadAsset(const AssetMetaData& metadata);
         AssetHandle RegisterAsset(const std::filesystem::path& filePath);
 
-        void SerializeAssetRegistry();
-        void DeserializeAssetRegistry();
+        bool SerializeAssetRegistry();
+        bool DeserializeAssetRegistry();
 
     private:
         std::filesystem::path GetBinaryPath(const AssetMetaData& metadata) const;

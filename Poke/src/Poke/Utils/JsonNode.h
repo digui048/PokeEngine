@@ -35,7 +35,7 @@ namespace Poke
         }
 
         template <typename T>
-        void Set(const std::string &key, const T &value) const
+        void Set(const std::string &key, const T &value)
         {
             m_json[key] = value;
         }

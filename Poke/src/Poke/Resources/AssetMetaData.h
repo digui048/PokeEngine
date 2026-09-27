@@ -17,7 +17,7 @@ namespace Poke
 
         operator bool() const
         {
-            return type != AssetType::None;
+            return static_cast<uint64_t>(handle) != 0 && type != AssetType::None;
         }
 
         static const AssetMetaData Null;

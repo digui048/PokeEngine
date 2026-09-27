@@ -2,18 +2,38 @@
 #define ASSET_H
 
 #include "Poke/Core/UUID.h"
+#include <string>
 
 namespace Poke
 {
     using AssetHandle = UUID;
 
-    enum class AssetType
+    enum class AssetType : uint16_t
     {
         None = 0,
         Texture,
         Material,
         Mesh
     };
+
+    inline std::string AssetTypeToString(AssetType type)
+    {
+        switch (type)
+        {
+        case AssetType::Texture:
+            return "Texture";
+        default:
+            return "None";
+        }
+    }
+
+    inline AssetType AssetTypeFromString(const std::string &typeStr)
+    {
+        if (typeStr == "Texture")
+            return AssetType::Texture;
+
+        return AssetType::None;
+    }
 
     class Asset
     {
