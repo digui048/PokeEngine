@@ -29,7 +29,7 @@ namespace Poke
 
         void ScanDirectoryAssets(const std::filesystem::path& directoryPath);
         std::shared_ptr<Asset> LoadAsset(const AssetMetaData& metadata);
-        void RegisterAsset(std::filesystem::path& filePath);
+        AssetHandle RegisterAsset(const std::filesystem::path& filePath);
 
         void SerializeAssetRegistry();
         void DeserializeAssetRegistry();

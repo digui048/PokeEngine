@@ -13,11 +13,17 @@ namespace Poke
         AssetType type = AssetType::None;
         std::filesystem::path filePath;
 
+        AssetMetaData() = default;
+
         operator bool() const
         {
             return type != AssetType::None;
         }
+
+        static const AssetMetaData Null;
     };
+
+    inline const AssetMetaData AssetMetaData::Null{};
 }
 
 #endif
