@@ -3,6 +3,7 @@
     "glm",
     "spdlog",
     "assimp",
-    "devil"
+    "devil",
+    "nlohmann-json"
   ]
 }

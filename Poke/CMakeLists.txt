@@ -17,6 +17,7 @@ find_package(PNG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(TIFF REQUIRED)
 find_package(Jasper REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 add_library(PokeEngineCore ALIAS ${PROJECT_NAME})
@@ -38,6 +39,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     TIFF::TIFF
     Jasper::Jasper
     JPEG::JPEG
+    nlohmann_json::nlohmann_json
 )
 
 find_program(GLSLC_EXECUTABLE glslc HINTS $ENV{VULKAN_SDK}/bin)
