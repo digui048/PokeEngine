@@ -21,7 +21,8 @@ namespace Poke
 
         const uint32_t GetWidth() const { return m_width; }
         const uint32_t GetHeight() const { return m_height; }
-        const std::vector<uint8_t> &GetPixels() const { return m_pixels; }
+        const uint8_t *GetPixels() const { return m_pixels.data(); }
+        uint32_t GetPixelsSize() const { return static_cast<uint32_t>(m_pixels.size()); }
 
         AssetType GetType() const override { return AssetType::Texture; }
 

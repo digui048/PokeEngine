@@ -1,12 +1,16 @@
 #include "EditorAssetManager.h"
 
 #include "Poke/Importers/AssetImporter.h"
+#include "Poke/Serializers/TextureSerializer.h"
 #include "Poke/Core/Log.h"
 
 using namespace Poke;
 
 EditorAssetManager::EditorAssetManager()
 {
+    m_assetSerializers[AssetType::Texture] =std::make_unique<TextureSerializer>();
+
+    DeserializeAssetRegistry();
 }
 
 std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
@@ -24,11 +28,11 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
     if (std::filesystem::exists(binaryPath))
     {
-        // auto it = m_assetSerializers.find(metadata.type);
-        // if (it != m_assetSerializers.end())
-        // {
-        //     asset = it->second->DeserializeFromLibrary(metadata, binaryPath);
-        // }
+        auto it = m_assetSerializers.find(metadata.type);
+        if (it != m_assetSerializers.end())
+        {
+            asset = it->second->DeserializeFromLibrary(metadata, binaryPath);
+        }
     }
 
     if (!asset)
@@ -36,11 +40,11 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
         asset = LoadAsset(metadata);
         if (asset)
         {
-            // auto it = m_assetSerializers.find(metadata.type);
-            // if (it != m_assetSerializers.end())
-            // {
-            //     it->second->SerializeToLibrary(metadata, asset, binaryPath);
-            // }
+            auto it = m_assetSerializers.find(metadata.type);
+            if (it != m_assetSerializers.end())
+            {
+                it->second->SerializeToLibrary(metadata, asset, binaryPath);
+            }
         }
         else
         {
@@ -82,6 +86,10 @@ const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
     return AssetMetaData::Null;
 }
 
+void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &directoryPath)
+{
+}
+
 std::shared_ptr<Asset> EditorAssetManager::LoadAsset(const AssetMetaData &metadata)
 {
     return AssetImporter::ImportAsset(metadata);
@@ -99,6 +107,14 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
     POKE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), filePath.string());
 
     return metadata.handle;
+}
+
+void EditorAssetManager::SerializeAssetRegistry()
+{
+}
+
+void EditorAssetManager::DeserializeAssetRegistry()
+{
 }
 
 std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &metadata) const

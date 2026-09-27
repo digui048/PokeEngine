@@ -3,6 +3,7 @@
 
 #include "Poke/Resources/AssetManagerBase.h"
 #include "Poke/Resources/AssetMetaData.h"
+#include "Poke/Serializers/AssetSerializer.h"
 
 #include <unordered_map>
 #include <filesystem>
@@ -11,7 +12,7 @@ namespace Poke
 {
     using AssetRegistry = std::unordered_map<AssetHandle, AssetMetaData>;
     using AssetMap = std::unordered_map<AssetHandle, std::shared_ptr<Asset>>;
-    //using SerializerMap = std::unordered_map<AssetType, std::shared_ptr<AssetSerializer>>;
+    using SerializerMap = std::unordered_map<AssetType, std::shared_ptr<AssetSerializer>>;
 
     class EditorAssetManager : public AssetManagerBase
     {
@@ -42,7 +43,7 @@ namespace Poke
     private:
         AssetRegistry m_assetRegistry;
         AssetMap m_loadedAssets;
-        //SerializerMap m_assetSerializers;
+        SerializerMap m_assetSerializers;
 
     private:
         std::filesystem::path m_registryPath = "Assets/AssetRegistry.json";
