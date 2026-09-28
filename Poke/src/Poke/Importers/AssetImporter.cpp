@@ -1,18 +1,26 @@
 #include "AssetImporter.h"
 #include "TextureImporter.h"
+#include "ModelImporter.h"
 
 using namespace Poke;
 
-std::shared_ptr<Asset> AssetImporter::ImportAsset(const AssetMetaData &metadata)
+AssetImportResult AssetImporter::ImportAsset(const AssetMetaData &metadata)
 {
     switch (metadata.type)
     {
     case AssetType::Texture:
     {
-        return TextureImporter::LoadTexture(metadata);
+        AssetImportResult result;
+        result.asset = TextureImporter::LoadTexture(metadata);
+        return result;
+    }
+
+    case AssetType::Model:
+    {
+        return ModelImporter::LoadModel(metadata);
     }
 
     default:
-        return nullptr;
+        return {};
     }
 }

@@ -4,6 +4,7 @@
 #include "Poke/Resources/Asset.h"
 
 #include <filesystem>
+#include <limits>
 
 namespace Poke
 {
@@ -12,12 +13,19 @@ namespace Poke
         AssetHandle handle;
         AssetType type = AssetType::None;
         std::filesystem::path filePath;
+        AssetHandle parentHandle;
+        uint32_t subAssetIndex = std::numeric_limits<uint32_t>::max();
 
         AssetMetaData() = default;
 
         operator bool() const
         {
             return static_cast<uint64_t>(handle) != 0 && type != AssetType::None;
+        }
+
+        bool IsSubAsset() const
+        {
+            return static_cast<uint64_t>(parentHandle) != 0;
         }
 
         static const AssetMetaData Null;
