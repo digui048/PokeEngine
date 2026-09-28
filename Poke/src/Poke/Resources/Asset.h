@@ -13,7 +13,8 @@ namespace Poke
         None = 0,
         Texture,
         Material,
-        Mesh
+        Mesh,
+        Model
     };
 
     inline std::string AssetTypeToString(AssetType type)
