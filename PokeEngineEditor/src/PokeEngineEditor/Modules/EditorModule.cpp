@@ -11,6 +11,9 @@
 
 #include "PokeEngineEditor/Asset/EditorAssetManager.h"
 
+#include "Poke/Resources/AssetManager.h"
+#include "Poke/Resources/Assets/Model.h"
+
 #include "Poke/Core/Application.h"
 #include "Poke/Core/Window.h"
 
@@ -48,8 +51,12 @@ void EditorModule::OnInit()
     AddInterface<MainMenuBarInterface>();
     AddInterface<AssetsExplorerInterface>(m_projectDir);
 
-    m_shibaEntity = m_scene->CreateGameObject("Shiba");
-    MeshImporter::LoadHierarchy((m_projectDir / "Assets/shiba.fbx").string(), m_shibaEntity);
+    m_assetManager = std::make_unique<EditorAssetManager>(m_projectDir);
+    AssetManager::SetActive(m_assetManager.get());
+    m_assetManager->ScanDirectoryAssets(m_projectDir / "Assets");
+
+    AssetHandle shibaHandle = m_assetManager->GetAssetHandle(m_projectDir / "Assets/shiba.fbx");
+    m_shibaEntity = m_scene->InstantiateModel(shibaHandle, "Shiba");
 
     VkPushConstantRange pushConstantRange;
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -60,12 +67,12 @@ void EditorModule::OnInit()
     m_defaultPipeline = Renderer::CreatePipeline("Poke/assets/shaders/defaultShader.vert.spv", "Poke/assets/shaders/defaultShader.frag.spv", pushConstantRanges);
     m_defaultPipeline->SetupGlobalDescriptors(Renderer::GetDefaultUniformBuffer());
 
-    //m_textureS = TextureImporter::LoadTexture((m_projectDir / "Assets/default_Base_Color.png").string());
+    // m_textureS = TextureImporter::LoadTexture((m_projectDir / "Assets/default_Base_Color.png").string());
     std::filesystem::path texturePath = m_projectDir / "Assets/default_Base_Color.png";
     AssetHandle textureHandle = m_assetManager->GetAssetHandle(texturePath);
-    if (m_assetManager->GetAssetType(textureHandle) == AssetType::Texture)
+    if (AssetManager::GetAssetType(textureHandle) == AssetType::Texture)
     {
-        m_textureS = std::static_pointer_cast<Texture>(m_assetManager->GetAsset(textureHandle));
+        m_textureS = AssetManager::GetAsset<Texture>(textureHandle);
     }
 
     m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
@@ -128,6 +135,9 @@ void EditorModule::OnShutdown()
     m_textureS.reset();
     m_materialS.reset();
     m_defaultPipeline.reset();
+
+    AssetManager::Shutdown();
+    m_assetManager.reset();
 }
 
 void EditorModule::OnFileDropped(const char *path, float x, float y)

@@ -2,6 +2,8 @@
 
 #include "Poke/Importers/AssetImporter.h"
 #include "Poke/Serializers/TextureSerializer.h"
+#include "Poke/Serializers/ModelSerializer.h"
+#include "Poke/Serializers/MeshSerializer.h"
 #include "Poke/Utils/Json.h"
 #include "Poke/Core/Log.h"
 
@@ -15,7 +17,8 @@ EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirec
     std::filesystem::create_directories(m_libraryPath);
 
     m_assetSerializers[AssetType::Texture] = std::make_unique<TextureSerializer>();
-
+    m_assetSerializers[AssetType::Model] = std::make_unique<ModelSerializer>();
+    m_assetSerializers[AssetType::Mesh] = std::make_unique<MeshSerializer>();
     DeserializeAssetRegistry();
 }
 
@@ -43,19 +46,32 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
     if (!asset)
     {
-        asset = LoadAsset(metadata);
-        if (asset)
+        AssetImportResult result = LoadAsset(metadata);
+        asset = result.asset;
+
+        if (!asset)
+            return nullptr;
+
+        for (uint32_t i = 0; i < result.subAssets.size(); ++i)
         {
-            auto it = m_assetSerializers.find(metadata.type);
+            const auto &subAsset = result.subAssets[i];
+            AssetHandle subHandle = RegisterSubAsset(subAsset, handle, i);
+
+            auto it = m_assetSerializers.find(subAsset->GetType());
             if (it != m_assetSerializers.end())
             {
-                it->second->SerializeToLibrary(metadata, asset, binaryPath);
+                AssetMetaData subMetadata = m_assetRegistry.at(subHandle);
+                it->second->SerializeToLibrary(subMetadata, subAsset, GetBinaryPath(subMetadata));
             }
         }
-        else
+
+        auto it = m_assetSerializers.find(metadata.type);
+        if (it != m_assetSerializers.end())
         {
-            return nullptr;
+            it->second->SerializeToLibrary(metadata, asset, binaryPath);
         }
+
+        SerializeAssetRegistry();
     }
 
     if (asset)
@@ -107,7 +123,7 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
 {
     if (!std::filesystem::exists(directoryPath))
     {
-        POKE_WARN("[AssetManager] Directory does not exist: {0}", directoryPath.string());
+        POKE_CORE_WARN("[AssetManager] Directory does not exist: {0}", directoryPath.string());
         return;
     }
 
@@ -149,7 +165,7 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
     }
 }
 
-std::shared_ptr<Asset> EditorAssetManager::LoadAsset(const AssetMetaData &metadata)
+AssetImportResult EditorAssetManager::LoadAsset(const AssetMetaData &metadata)
 {
     return AssetImporter::ImportAsset(metadata);
 }
@@ -163,7 +179,27 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
 
     m_assetRegistry[metadata.handle] = metadata;
 
-    POKE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), filePath.string());
+    POKE_CORE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), filePath.string());
+
+    return metadata.handle;
+}
+
+AssetHandle Poke::EditorAssetManager::RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex)
+{
+    if (!asset)
+        return AssetHandle();
+
+    AssetMetaData metadata;
+    metadata.handle = asset->GetHandle();
+    metadata.type = asset->GetType();
+    metadata.filePath = "";
+    metadata.parentHandle = parentHandle;
+    metadata.subAssetIndex = subAssetIndex;
+
+    m_assetRegistry[metadata.handle] = metadata;
+    m_loadedAssets[metadata.handle] = asset;
+
+    POKE_CORE_INFO("[AssetManager] Registered subasset [{0}] -> parent {1}", static_cast<uint64_t>(metadata.handle), static_cast<uint64_t>(metadata.parentHandle));
 
     return metadata.handle;
 }
@@ -182,6 +218,12 @@ bool EditorAssetManager::SerializeAssetRegistry()
         item.Set("Type", AssetTypeToString(metadata.type));
         item.Set("FilePath", metadata.filePath.string());
 
+        uint64_t parentHandle = static_cast<uint64_t>(metadata.parentHandle);
+        if (parentHandle != 0)
+        {
+            item.Set("ParentHandle", parentHandle);
+            item.Set("SubAssetIndex", metadata.subAssetIndex);
+        }
         assetsArray.push_back(item.GetInternal());
     }
 
@@ -202,7 +244,7 @@ bool EditorAssetManager::DeserializeAssetRegistry()
     JsonNode registryNode = root["AssetRegistry"];
     JsonNode assetsNode = registryNode["Assets"];
 
-    const auto& assetsJson = assetsNode.GetInternal();
+    const auto &assetsJson = assetsNode.GetInternal();
 
     if (!assetsJson.is_array())
     {
@@ -220,6 +262,9 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         metadata.handle = AssetHandle(item.Get<uint64_t>("Handle", 0));
         metadata.type = AssetTypeFromString(item.Get<std::string>("Type", "None"));
         metadata.filePath = std::filesystem::path(item.Get<std::string>("FilePath", ""));
+        metadata.parentHandle = AssetHandle(item.Get<uint64_t>("ParentHandle", 0));
+
+        metadata.subAssetIndex = item.Get<uint32_t>("SubAssetIndex", std::numeric_limits<uint32_t>::max());
 
         if (metadata)
         {
@@ -227,30 +272,39 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         }
     }
 
-    POKE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
+    POKE_CORE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
     return true;
 }
 
 std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &metadata) const
 {
+    std::filesystem::path directory;
     std::string extension;
     switch (metadata.type)
     {
     case AssetType::Texture:
+        directory = "Textures";
         extension = ".tex";
         break;
     case AssetType::Mesh:
+        directory = "Meshes";
         extension = ".mesh";
         break;
     case AssetType::Material:
+        directory = "Materials";
         extension = ".mat";
         break;
+    case AssetType::Model:
+        directory = "Models";
+        extension = ".model";
+        break;
     default:
+        directory = "Others";
         extension = ".bin";
         break;
     }
 
-    return m_libraryPath / (std::to_string(static_cast<uint64_t>(metadata.handle)) + extension);
+    return m_libraryPath / directory / (std::to_string(static_cast<uint64_t>(metadata.handle)) + extension);
 }
 
 bool EditorAssetManager::IsAssetExtension(const std::filesystem::path &extension) const
@@ -263,7 +317,7 @@ AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::p
     if (extension == ".png" || extension == ".jpg")
         return AssetType::Texture;
     if (extension == ".fbx")
-        return AssetType::Mesh;
+        return AssetType::Model;
 
     return AssetType::None;
 }

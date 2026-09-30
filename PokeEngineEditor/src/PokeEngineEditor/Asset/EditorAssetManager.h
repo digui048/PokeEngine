@@ -3,6 +3,7 @@
 
 #include "Poke/Resources/AssetManagerBase.h"
 #include "Poke/Resources/AssetMetaData.h"
+#include "Poke/Resources/AssetImportResult.h"
 #include "Poke/Serializers/AssetSerializer.h"
 
 #include <unordered_map>
@@ -29,17 +30,18 @@ namespace Poke
 
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
 
-        void ScanDirectoryAssets(const std::filesystem::path& directoryPath);
-        std::shared_ptr<Asset> LoadAsset(const AssetMetaData& metadata);
-        AssetHandle RegisterAsset(const std::filesystem::path& filePath);
+        void ScanDirectoryAssets(const std::filesystem::path &directoryPath);
+        AssetImportResult LoadAsset(const AssetMetaData &metadata);
+        AssetHandle RegisterAsset(const std::filesystem::path &filePath);
+        AssetHandle RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex);
 
         bool SerializeAssetRegistry();
         bool DeserializeAssetRegistry();
 
     private:
-        std::filesystem::path GetBinaryPath(const AssetMetaData& metadata) const;
-        bool IsAssetExtension(const std::filesystem::path& extension) const;
-        AssetType GetAssetTypeFromExtension(const std::filesystem::path& extension) const;
+        std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
+        bool IsAssetExtension(const std::filesystem::path &extension) const;
+        AssetType GetAssetTypeFromExtension(const std::filesystem::path &extension) const;
 
     private:
         AssetRegistry m_assetRegistry;

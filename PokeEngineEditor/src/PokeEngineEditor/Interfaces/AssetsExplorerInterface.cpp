@@ -162,7 +162,7 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
 
     if (std::filesystem::exists(destinationPath))
     {
-        POKE_ERROR("File already exists: {0}", destinationPath.string());
+        POKE_CORE_ERROR("File already exists: {0}", destinationPath.string());
         return;
     }
 
@@ -179,7 +179,7 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
     }
     catch (const std::filesystem::filesystem_error &e)
     {
-        POKE_ERROR("Failed to copy file: {0}", e.what());
+        POKE_CORE_ERROR("Failed to copy file: {0}", e.what());
     }
 }
 
@@ -194,7 +194,7 @@ void AssetsExplorerInterface::RemoveDirectory(const char *path)
         std::uintmax_t deletedCount = std::filesystem::remove_all(path, ec);
         if (ec)
         {
-            POKE_ERROR("Failed to remove directory '{0}': {1}", path, ec.message());
+            POKE_CORE_ERROR("Failed to remove directory '{0}': {1}", path, ec.message());
         }
     }
 }
@@ -210,7 +210,7 @@ void AssetsExplorerInterface::RemoveFile(const char *path)
         std::filesystem::remove(path, ec);
         if (ec)
         {
-            POKE_ERROR("Failed to remove file '{0}': {1}", path, ec.message());
+            POKE_CORE_ERROR("Failed to remove file '{0}': {1}", path, ec.message());
         }
     }
 }
