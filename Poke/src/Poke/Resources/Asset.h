@@ -23,6 +23,10 @@ namespace Poke
         {
         case AssetType::Texture:
             return "Texture";
+        case AssetType::Model:
+            return "Model";
+        case AssetType::Mesh:
+            return "Mesh";
         default:
             return "None";
         }
@@ -32,7 +36,11 @@ namespace Poke
     {
         if (typeStr == "Texture")
             return AssetType::Texture;
-
+        if (typeStr == "Model")
+            return AssetType::Model;
+        if (typeStr == "Mesh")
+            return AssetType::Mesh;
+            
         return AssetType::None;
     }
 
