@@ -24,7 +24,8 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
     std::vector<AssetHandle> meshHandles(scene->mNumMeshes);
     for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
     {
-        AssetHandle meshHandle;
+        uint64_t detID = GenerateSubUUID(static_cast<uint64_t>(metadata.handle), i);
+        AssetHandle meshHandle = AssetHandle(detID);
         std::shared_ptr<Mesh> mesh = MeshImporter::LoadMesh(scene->mMeshes[i], meshHandle);
 
         if (!mesh)
