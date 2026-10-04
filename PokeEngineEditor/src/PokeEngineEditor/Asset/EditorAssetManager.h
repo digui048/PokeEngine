@@ -42,7 +42,10 @@ namespace Poke
 
     private:
         bool ImportAndSerializeAsset(AssetHandle handle);
+        
         void InvalidateAsset(AssetHandle handle);
+        void RemoveAsset(AssetHandle handle);
+        void RemoveMissingAssets();
 
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
         bool IsAssetExtension(const std::filesystem::path &extension) const;
@@ -50,6 +53,7 @@ namespace Poke
 
         uint64_t GetFileLastWriteTime(const std::filesystem::path &filePath) const;
         bool IsAssetModified(const AssetMetaData &metadata) const;
+        bool IsAssetSourceMissing(const AssetMetaData &metadata) const;
 
     private:
         AssetRegistry m_assetRegistry;

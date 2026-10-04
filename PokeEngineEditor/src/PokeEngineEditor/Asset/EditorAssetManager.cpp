@@ -34,6 +34,15 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
         return nullptr;
 
     const AssetMetaData &sourceMetadata = m_assetRegistry.at(sourceHandle);
+
+    if (IsAssetSourceMissing(sourceMetadata))
+    {
+        POKE_CORE_WARN("[AssetManager] Source file missing: {0}", sourceMetadata.filePath.string());
+
+        RemoveAsset(sourceHandle);
+        return nullptr;
+    }
+
     if (IsAssetModified(sourceMetadata))
     {
         POKE_CORE_WARN("[AssetManager] Source asset modified: {0}", sourceMetadata.filePath.string());
@@ -139,6 +148,8 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
         POKE_CORE_WARN("[AssetManager] Directory does not exist: {0}", directoryPath.string());
         return;
     }
+
+    RemoveMissingAssets();
 
     bool newAssetDiscovered = false;
 
@@ -376,6 +387,76 @@ void EditorAssetManager::InvalidateAsset(AssetHandle handle)
     SerializeAssetRegistry();
 }
 
+void EditorAssetManager::RemoveAsset(AssetHandle handle)
+{
+    if (!IsAssetHandleValid(handle))
+        return;
+
+    AssetHandle parentHandle = handle;
+
+    if (m_assetRegistry.at(handle).IsSubAsset())
+        parentHandle = m_assetRegistry.at(handle).parentHandle;
+
+    if (!IsAssetHandleValid(parentHandle))
+        return;
+
+    std::vector<AssetHandle> subAssetHandles;
+    for (const auto &[subHandle, metadata] : m_assetRegistry)
+    {
+        if (metadata.parentHandle == parentHandle)
+            subAssetHandles.push_back(subHandle);
+    }
+
+    for (AssetHandle subHandle : subAssetHandles)
+    {
+        auto it = m_assetRegistry.find(subHandle);
+        if (it == m_assetRegistry.end())
+            continue;
+
+        m_loadedAssets.erase(subHandle);
+        std::filesystem::remove(GetBinaryPath(it->second));
+
+        m_assetRegistry.erase(it);
+    }
+
+    m_loadedAssets.erase(parentHandle);
+
+    const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
+    std::filesystem::remove(GetBinaryPath(parentMetadata));
+
+    m_assetRegistry.erase(parentHandle);
+
+    SerializeAssetRegistry();
+}
+
+void EditorAssetManager::RemoveMissingAssets()
+{
+    std::vector<AssetHandle> missingAssets;
+
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (metadata.IsSubAsset())
+            continue;
+
+        if (metadata.filePath.empty())
+            continue;
+
+        if (!std::filesystem::exists(metadata.filePath))
+            missingAssets.push_back(handle);
+    }
+
+    for (AssetHandle handle : missingAssets)
+    {
+        const auto it = m_assetRegistry.find(handle);
+        if (it == m_assetRegistry.end())
+            continue;
+
+        POKE_CORE_WARN("[AssetManager] Source file removed: {0}", it->second.filePath.string());
+        
+        RemoveAsset(handle);
+    }
+}
+
 std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &metadata) const
 {
     std::filesystem::path directory;
@@ -451,4 +532,20 @@ bool EditorAssetManager::IsAssetModified(const AssetMetaData &metadata) const
     uint64_t currentLastWriteTime = GetFileLastWriteTime(metadata.filePath);
 
     return currentLastWriteTime != metadata.lastWriteTime;
+}
+
+bool EditorAssetManager::IsAssetSourceMissing(const AssetMetaData &metadata) const
+{
+    if (metadata.IsSubAsset())
+    {
+        if (!IsAssetHandleValid(metadata.parentHandle))
+            return true;
+
+        return IsAssetSourceMissing(m_assetRegistry.at(metadata.parentHandle));
+    }
+
+    if (metadata.filePath.empty())
+        return true;
+
+    return !std::filesystem::exists(metadata.filePath);
 }
