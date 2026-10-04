@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <chrono>
+#include <vector>
 
 namespace Poke
 {
@@ -40,7 +41,9 @@ namespace Poke
         bool DeserializeAssetRegistry();
 
     private:
-        bool ImportAndSerializeAsset(const AssetMetaData &metadata);
+        bool ImportAndSerializeAsset(AssetHandle handle);
+        void InvalidateAsset(AssetHandle handle);
+
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
         bool IsAssetExtension(const std::filesystem::path &extension) const;
         AssetType GetAssetTypeFromExtension(const std::filesystem::path &extension) const;
