@@ -24,6 +24,7 @@ namespace Poke
         ~EditorAssetManager() override = default;
 
         std::shared_ptr<Asset> GetAsset(AssetHandle handle) override;
+        void RemoveAsset(AssetHandle handle);
 
         bool IsAssetHandleValid(AssetHandle handle) const override;
         bool IsAssetLoaded(AssetHandle handle) const override;
@@ -37,6 +38,8 @@ namespace Poke
         AssetHandle RegisterAsset(const std::filesystem::path &filePath);
         AssetHandle RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex);
 
+        bool IsAssetFile(const std::filesystem::path &filePath) const;
+
         bool SerializeAssetRegistry();
         bool DeserializeAssetRegistry();
 
@@ -44,7 +47,6 @@ namespace Poke
         bool ImportAndSerializeAsset(AssetHandle handle);
         
         void InvalidateAsset(AssetHandle handle);
-        void RemoveAsset(AssetHandle handle);
         void RemoveMissingAssets();
 
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;

@@ -229,6 +229,11 @@ AssetHandle Poke::EditorAssetManager::RegisterSubAsset(const std::shared_ptr<Ass
     return metadata.handle;
 }
 
+bool EditorAssetManager::IsAssetFile(const std::filesystem::path &filePath) const
+{
+    return IsAssetExtension(filePath.extension());
+}
+
 bool EditorAssetManager::SerializeAssetRegistry()
 {
     JsonNode root;
@@ -424,6 +429,8 @@ void EditorAssetManager::RemoveAsset(AssetHandle handle)
     const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
     std::filesystem::remove(GetBinaryPath(parentMetadata));
 
+    POKE_CORE_INFO("[AssetManager] Remove asset with type: {0} and path {1}", AssetTypeToString(parentMetadata.type), parentMetadata.filePath.string());
+
     m_assetRegistry.erase(parentHandle);
 
     SerializeAssetRegistry();
@@ -452,7 +459,7 @@ void EditorAssetManager::RemoveMissingAssets()
             continue;
 
         POKE_CORE_WARN("[AssetManager] Source file removed: {0}", it->second.filePath.string());
-        
+
         RemoveAsset(handle);
     }
 }

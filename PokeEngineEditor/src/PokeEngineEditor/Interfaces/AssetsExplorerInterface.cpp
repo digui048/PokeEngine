@@ -9,8 +9,8 @@ using namespace Poke;
 
 std::filesystem::path AssetsExplorerInterface::s_selectedFile = "";
 
-AssetsExplorerInterface::AssetsExplorerInterface(const std::filesystem::path &path)
-    : EditorInterface("Assets Explorer")
+AssetsExplorerInterface::AssetsExplorerInterface(const std::filesystem::path &path, EditorAssetManager *assetManager)
+    : EditorInterface("Assets Explorer"), m_assetManager(assetManager)
 {
     m_assetsDirectory = path / "Assets";
 
@@ -175,6 +175,12 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
         else if (std::filesystem::is_regular_file(sourcePath))
         {
             std::filesystem::copy_file(sourcePath, destinationPath);
+            if (m_assetManager->IsAssetFile(destinationPath))
+            {
+                AssetHandle handle = m_assetManager->RegisterAsset(destinationPath);
+                if (handle)
+                    m_assetManager->GetAsset(handle);
+            }
         }
     }
     catch (const std::filesystem::filesystem_error &e)
@@ -188,14 +194,25 @@ void AssetsExplorerInterface::RemoveDirectory(const char *path)
     if (!path)
         return;
 
-    std::error_code ec;
-    if (std::filesystem::exists(path, ec) && std::filesystem::is_directory(path, ec))
+    std::filesystem::path directoryPath(path);
+    if (!std::filesystem::exists(directoryPath) || !std::filesystem::is_directory(directoryPath))
+        return;
+
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(directoryPath))
     {
-        std::uintmax_t deletedCount = std::filesystem::remove_all(path, ec);
-        if (ec)
-        {
-            POKE_CORE_ERROR("Failed to remove directory '{0}': {1}", path, ec.message());
-        }
+        if (!entry.is_regular_file())
+            continue;
+
+        AssetHandle handle = m_assetManager->GetAssetHandle(entry.path());
+        if (handle)
+            m_assetManager->RemoveAsset(handle);
+    }
+
+    std::error_code ec;
+    std::filesystem::remove_all(path, ec);
+    if (ec)
+    {
+        POKE_CORE_ERROR("Failed to remove directory '{0}': {1}", path, ec.message());
     }
 }
 
@@ -203,6 +220,12 @@ void AssetsExplorerInterface::RemoveFile(const char *path)
 {
     if (!path)
         return;
+
+    std::filesystem::path filePath(path);
+
+    AssetHandle handle = m_assetManager->GetAssetHandle(filePath);
+    if (handle)
+        m_assetManager->RemoveAsset(handle);
 
     std::error_code ec;
     if (std::filesystem::exists(path, ec) && std::filesystem::is_regular_file(path, ec))
