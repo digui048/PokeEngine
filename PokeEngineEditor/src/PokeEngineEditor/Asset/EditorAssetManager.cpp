@@ -24,13 +24,19 @@ EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirec
 
 std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 {
-    if (IsAssetLoaded(handle))
-        return m_loadedAssets.at(handle);
-
     if (!IsAssetHandleValid(handle))
         return nullptr;
 
     const AssetMetaData &metadata = m_assetRegistry.at(handle);
+
+    if (IsAssetModified(metadata))
+    {
+        POKE_CORE_WARN("[AssetManager] Asset modified: {0}", metadata.filePath.string());
+    }
+
+    if (IsAssetLoaded(handle))
+        return m_loadedAssets.at(handle);
+
     std::filesystem::path binaryPath = GetBinaryPath(metadata);
 
     auto serializerIt = m_assetSerializers.find(metadata.type);
@@ -55,7 +61,7 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
         if (!ImportAndSerializeAsset(parentMetadata))
             return nullptr;
-        
+
         auto it = m_loadedAssets.find(handle);
         if (it != m_loadedAssets.end())
             return it->second;
@@ -167,6 +173,7 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
     metadata.handle = AssetHandle();
     metadata.filePath = filePath;
     metadata.type = GetAssetTypeFromExtension(filePath.extension());
+    metadata.lastWriteTime = GetFileLastWriteTime(filePath);
 
     m_assetRegistry[metadata.handle] = metadata;
 
@@ -208,6 +215,7 @@ bool EditorAssetManager::SerializeAssetRegistry()
         item.Set("Handle", static_cast<uint64_t>(metadata.handle));
         item.Set("Type", AssetTypeToString(metadata.type));
         item.Set("FilePath", metadata.filePath.string());
+        item.Set("LastWriteTime", metadata.lastWriteTime);
 
         uint64_t parentHandle = static_cast<uint64_t>(metadata.parentHandle);
         if (parentHandle != 0)
@@ -253,8 +261,8 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         metadata.handle = AssetHandle(item.Get<uint64_t>("Handle", 0));
         metadata.type = AssetTypeFromString(item.Get<std::string>("Type", "None"));
         metadata.filePath = std::filesystem::path(item.Get<std::string>("FilePath", ""));
+        metadata.lastWriteTime = item.Get<uint64_t>("LastWriteTime", 0);
         metadata.parentHandle = AssetHandle(item.Get<uint64_t>("ParentHandle", 0));
-
         metadata.subAssetIndex = item.Get<uint32_t>("SubAssetIndex", std::numeric_limits<uint32_t>::max());
 
         if (metadata)
@@ -344,4 +352,35 @@ AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::p
         return AssetType::Model;
 
     return AssetType::None;
+}
+
+uint64_t EditorAssetManager::GetFileLastWriteTime(const std::filesystem::path &filePath) const
+{
+    if (!std::filesystem::exists(filePath))
+        return 0;
+
+    auto lastWriteTime = std::filesystem::last_write_time(filePath);
+
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(lastWriteTime.time_since_epoch()).count());
+}
+
+bool EditorAssetManager::IsAssetModified(const AssetMetaData &metadata) const
+{
+    if (metadata.IsSubAsset())
+    {
+        if (!IsAssetHandleValid(metadata.parentHandle))
+            return false;
+
+        return IsAssetModified(m_assetRegistry.at(metadata.parentHandle));
+    }
+
+    if (metadata.filePath.empty())
+        return false;
+
+    if (!std::filesystem::exists(metadata.filePath))
+        return false;
+
+    uint64_t currentLastWriteTime = GetFileLastWriteTime(metadata.filePath);
+
+    return currentLastWriteTime != metadata.lastWriteTime;
 }

@@ -16,6 +16,8 @@ namespace Poke
         AssetHandle parentHandle = 0;
         uint32_t subAssetIndex = std::numeric_limits<uint32_t>::max();
 
+        uint64_t lastWriteTime = 0;
+
         AssetMetaData() = default;
 
         operator bool() const

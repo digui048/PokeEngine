@@ -8,6 +8,7 @@
 
 #include <unordered_map>
 #include <filesystem>
+#include <chrono>
 
 namespace Poke
 {
@@ -26,8 +27,8 @@ namespace Poke
         bool IsAssetHandleValid(AssetHandle handle) const override;
         bool IsAssetLoaded(AssetHandle handle) const override;
         AssetType GetAssetType(AssetHandle handle) const override;
-        AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
 
+        AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
 
         void ScanDirectoryAssets(const std::filesystem::path &directoryPath);
@@ -43,6 +44,9 @@ namespace Poke
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
         bool IsAssetExtension(const std::filesystem::path &extension) const;
         AssetType GetAssetTypeFromExtension(const std::filesystem::path &extension) const;
+
+        uint64_t GetFileLastWriteTime(const std::filesystem::path &filePath) const;
+        bool IsAssetModified(const AssetMetaData &metadata) const;
 
     private:
         AssetRegistry m_assetRegistry;
