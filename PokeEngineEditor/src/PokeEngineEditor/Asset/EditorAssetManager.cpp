@@ -33,53 +33,44 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
     const AssetMetaData &metadata = m_assetRegistry.at(handle);
     std::filesystem::path binaryPath = GetBinaryPath(metadata);
 
-    std::shared_ptr<Asset> asset = nullptr;
+    auto serializerIt = m_assetSerializers.find(metadata.type);
 
-    if (std::filesystem::exists(binaryPath))
+    if (std::filesystem::exists(binaryPath) && serializerIt != m_assetSerializers.end())
     {
-        auto it = m_assetSerializers.find(metadata.type);
-        if (it != m_assetSerializers.end())
+        std::shared_ptr<Asset> asset = serializerIt->second->DeserializeFromLibrary(metadata, binaryPath);
+
+        if (asset)
         {
-            asset = it->second->DeserializeFromLibrary(metadata, binaryPath);
+            m_loadedAssets[handle] = asset;
+            return asset;
         }
     }
 
-    if (!asset)
+    if (metadata.IsSubAsset())
     {
-        AssetImportResult result = LoadAsset(metadata);
-        asset = result.asset;
-
-        if (!asset)
+        if (!IsAssetHandleValid(metadata.parentHandle))
             return nullptr;
 
-        for (uint32_t i = 0; i < result.subAssets.size(); ++i)
-        {
-            const auto &subAsset = result.subAssets[i];
-            AssetHandle subHandle = RegisterSubAsset(subAsset, handle, i);
+        const AssetMetaData &parentMetadata = m_assetRegistry.at(metadata.parentHandle);
 
-            auto it = m_assetSerializers.find(subAsset->GetType());
-            if (it != m_assetSerializers.end())
-            {
-                AssetMetaData subMetadata = m_assetRegistry.at(subHandle);
-                it->second->SerializeToLibrary(subMetadata, subAsset, GetBinaryPath(subMetadata));
-            }
-        }
+        if (!ImportAndSerializeAsset(parentMetadata))
+            return nullptr;
+        
+        auto it = m_loadedAssets.find(handle);
+        if (it != m_loadedAssets.end())
+            return it->second;
 
-        auto it = m_assetSerializers.find(metadata.type);
-        if (it != m_assetSerializers.end())
-        {
-            it->second->SerializeToLibrary(metadata, asset, binaryPath);
-        }
-
-        SerializeAssetRegistry();
+        return nullptr;
     }
 
-    if (asset)
-    {
-        m_loadedAssets[handle] = asset;
-    }
+    if (!ImportAndSerializeAsset(metadata))
+        return nullptr;
 
-    return asset;
+    auto it = m_loadedAssets.find(handle);
+    if (it != m_loadedAssets.end())
+        return it->second;
+
+    return nullptr;
 }
 
 bool EditorAssetManager::IsAssetHandleValid(AssetHandle handle) const
@@ -273,6 +264,39 @@ bool EditorAssetManager::DeserializeAssetRegistry()
     }
 
     POKE_CORE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
+    return true;
+}
+
+bool EditorAssetManager::ImportAndSerializeAsset(const AssetMetaData &metadata)
+{
+    AssetImportResult result = LoadAsset(metadata);
+
+    if (!result.asset)
+        return false;
+
+    for (uint32_t i = 0; i < result.subAssets.size(); ++i)
+    {
+        const auto &subAsset = result.subAssets[i];
+        AssetHandle subHandle = RegisterSubAsset(subAsset, metadata.handle, i);
+
+        auto it = m_assetSerializers.find(subAsset->GetType());
+        if (it != m_assetSerializers.end())
+        {
+            const AssetMetaData subMetadata = m_assetRegistry.at(subHandle);
+            it->second->SerializeToLibrary(subMetadata, subAsset, GetBinaryPath(subMetadata));
+        }
+    }
+
+    auto it = m_assetSerializers.find(metadata.type);
+    if (it != m_assetSerializers.end())
+    {
+        it->second->SerializeToLibrary(metadata, result.asset, GetBinaryPath(metadata));
+    }
+
+    m_loadedAssets[metadata.handle] = result.asset;
+
+    SerializeAssetRegistry();
+
     return true;
 }
 

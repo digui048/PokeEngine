@@ -39,6 +39,7 @@ namespace Poke
         bool DeserializeAssetRegistry();
 
     private:
+        bool ImportAndSerializeAsset(const AssetMetaData &metadata);
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
         bool IsAssetExtension(const std::filesystem::path &extension) const;
         AssetType GetAssetTypeFromExtension(const std::filesystem::path &extension) const;
