@@ -25,7 +25,7 @@ bool TextureSerializer::SerializeToLibrary(const AssetMetaData &metadata, const 
     const uint8_t *pixelData = texture->GetPixels();
     if (!pixelData || header.pixelDataSize == 0)
     {
-        POKE_CORE_ERROR("[TextureSerializer] Texture pixels is empty: {0}", metadata.filePath.string());
+        POKE_CORE_ERROR("[TextureSerializer] Texture pixels is empty: {0}", metadata.sourcePath.string());
         return false;
     }
 
@@ -59,7 +59,7 @@ std::shared_ptr<Asset> TextureSerializer::DeserializeFromLibrary(const AssetMeta
 
     if (!file || header.pixelDataSize == 0)
     {
-        POKE_CORE_ERROR("[TextureSerializer] Binary file header is corrupt or invalid: {0}", metadata.filePath.string());
+        POKE_CORE_ERROR("[TextureSerializer] Binary file header is corrupt or invalid: {0}", metadata.sourcePath.string());
         return nullptr;
     }
 

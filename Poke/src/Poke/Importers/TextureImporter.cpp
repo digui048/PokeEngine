@@ -7,7 +7,7 @@ using namespace Poke;
 
 std::shared_ptr<Texture> Poke::TextureImporter::LoadTexture(const AssetMetaData &metadata)
 {
-    return LoadTexture(metadata.handle, metadata.filePath.string());
+    return LoadTexture(metadata.handle, metadata.sourcePath.string());
 }
 
 std::shared_ptr<Texture> TextureImporter::LoadTexture(const std::string &filepath)

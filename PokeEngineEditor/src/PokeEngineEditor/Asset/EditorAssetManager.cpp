@@ -37,7 +37,7 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
     if (IsAssetSourceMissing(sourceMetadata))
     {
-        POKE_CORE_WARN("[AssetManager] Source file missing: {0}", sourceMetadata.filePath.string());
+        POKE_CORE_WARN("[AssetManager] Source file missing: {0}", sourceMetadata.sourcePath.string());
 
         RemoveAsset(sourceHandle);
         return nullptr;
@@ -45,7 +45,7 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
     if (IsAssetModified(sourceMetadata))
     {
-        POKE_CORE_WARN("[AssetManager] Source asset modified: {0}", sourceMetadata.filePath.string());
+        POKE_CORE_WARN("[AssetManager] Source asset modified: {0}", sourceMetadata.sourcePath.string());
 
         InvalidateAsset(sourceHandle);
 
@@ -126,7 +126,7 @@ AssetHandle EditorAssetManager::GetAssetHandle(const std::filesystem::path &file
 {
     for (const auto &[handle, metadata] : m_assetRegistry)
     {
-        if (metadata.filePath == filePath)
+        if (metadata.sourcePath == filePath)
             return handle;
     }
 
@@ -169,7 +169,7 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
         bool alreadyRegistered = false;
         for (const auto &[handle, metadata] : m_assetRegistry)
         {
-            if (metadata.filePath == filePath)
+            if (metadata.sourcePath == filePath)
             {
                 alreadyRegistered = true;
                 break;
@@ -198,7 +198,8 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
 {
     AssetMetaData metadata;
     metadata.handle = AssetHandle();
-    metadata.filePath = filePath;
+    metadata.filePath = "";
+    metadata.sourcePath = filePath;
     metadata.type = GetAssetTypeFromExtension(filePath.extension());
     metadata.lastWriteTime = GetFileLastWriteTime(filePath);
 
@@ -246,6 +247,7 @@ bool EditorAssetManager::SerializeAssetRegistry()
         JsonNode item;
         item.Set("Handle", static_cast<uint64_t>(metadata.handle));
         item.Set("Type", AssetTypeToString(metadata.type));
+        item.Set("SourcePath", metadata.sourcePath.string());
         item.Set("FilePath", metadata.filePath.string());
         item.Set("LastWriteTime", metadata.lastWriteTime);
 
@@ -292,6 +294,7 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         AssetMetaData metadata;
         metadata.handle = AssetHandle(item.Get<uint64_t>("Handle", 0));
         metadata.type = AssetTypeFromString(item.Get<std::string>("Type", "None"));
+        metadata.sourcePath = std::filesystem::path(item.Get<std::string>("SourcePath", ""));
         metadata.filePath = std::filesystem::path(item.Get<std::string>("FilePath", ""));
         metadata.lastWriteTime = item.Get<uint64_t>("LastWriteTime", 0);
         metadata.parentHandle = AssetHandle(item.Get<uint64_t>("ParentHandle", 0));
@@ -345,7 +348,7 @@ bool EditorAssetManager::ImportAndSerializeAsset(AssetHandle handle)
     m_loadedAssets[metadata.handle] = result.asset;
 
     AssetMetaData &updatedMetadata = m_assetRegistry.at(handle);
-    updatedMetadata.lastWriteTime = GetFileLastWriteTime(updatedMetadata.filePath);
+    updatedMetadata.lastWriteTime = GetFileLastWriteTime(updatedMetadata.sourcePath);
 
     SerializeAssetRegistry();
 
@@ -429,7 +432,7 @@ void EditorAssetManager::RemoveAsset(AssetHandle handle)
     const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
     std::filesystem::remove(GetBinaryPath(parentMetadata));
 
-    POKE_CORE_INFO("[AssetManager] Remove asset with type: {0} and path {1}", AssetTypeToString(parentMetadata.type), parentMetadata.filePath.string());
+    POKE_CORE_INFO("[AssetManager] Remove asset with type: {0} and path {1}", AssetTypeToString(parentMetadata.type), parentMetadata.sourcePath.string());
 
     m_assetRegistry.erase(parentHandle);
 
@@ -445,10 +448,10 @@ void EditorAssetManager::RemoveMissingAssets()
         if (metadata.IsSubAsset())
             continue;
 
-        if (metadata.filePath.empty())
+        if (metadata.sourcePath.empty())
             continue;
 
-        if (!std::filesystem::exists(metadata.filePath))
+        if (!std::filesystem::exists(metadata.sourcePath))
             missingAssets.push_back(handle);
     }
 
@@ -458,7 +461,7 @@ void EditorAssetManager::RemoveMissingAssets()
         if (it == m_assetRegistry.end())
             continue;
 
-        POKE_CORE_WARN("[AssetManager] Source file removed: {0}", it->second.filePath.string());
+        POKE_CORE_WARN("[AssetManager] Source file removed: {0}", it->second.sourcePath.string());
 
         RemoveAsset(handle);
     }
@@ -530,13 +533,13 @@ bool EditorAssetManager::IsAssetModified(const AssetMetaData &metadata) const
         return IsAssetModified(m_assetRegistry.at(metadata.parentHandle));
     }
 
-    if (metadata.filePath.empty())
+    if (metadata.sourcePath.empty())
         return false;
 
-    if (!std::filesystem::exists(metadata.filePath))
+    if (!std::filesystem::exists(metadata.sourcePath))
         return false;
 
-    uint64_t currentLastWriteTime = GetFileLastWriteTime(metadata.filePath);
+    uint64_t currentLastWriteTime = GetFileLastWriteTime(metadata.sourcePath);
 
     return currentLastWriteTime != metadata.lastWriteTime;
 }
@@ -551,8 +554,8 @@ bool EditorAssetManager::IsAssetSourceMissing(const AssetMetaData &metadata) con
         return IsAssetSourceMissing(m_assetRegistry.at(metadata.parentHandle));
     }
 
-    if (metadata.filePath.empty())
+    if (metadata.sourcePath.empty())
         return true;
 
-    return !std::filesystem::exists(metadata.filePath);
+    return !std::filesystem::exists(metadata.sourcePath);
 }

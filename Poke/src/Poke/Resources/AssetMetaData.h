@@ -13,6 +13,7 @@ namespace Poke
         AssetHandle handle;
         AssetType type = AssetType::None;
         std::filesystem::path filePath;
+        std::filesystem::path sourcePath;
         AssetHandle parentHandle = 0;
         uint32_t subAssetIndex = std::numeric_limits<uint32_t>::max();
 

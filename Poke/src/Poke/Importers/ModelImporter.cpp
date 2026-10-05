@@ -13,7 +13,7 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
     AssetImportResult result;
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
-    const aiScene *scene = importer.ReadFile(metadata.filePath.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = importer.ReadFile(metadata.sourcePath.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
