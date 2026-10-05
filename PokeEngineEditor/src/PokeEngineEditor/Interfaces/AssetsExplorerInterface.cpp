@@ -68,12 +68,16 @@ void AssetsExplorerInterface::OnImGuiRender()
     {
         std::filesystem::path pathToDelete = "";
         bool isDirectoryToDelete = false;
+        AssetHandle handleToImport;
 
         for (auto &directoryEntry : std::filesystem::directory_iterator(m_currentDirectory))
         {
             const auto &path = directoryEntry.path();
             std::string filenameString = path.filename().string();
             bool isDirectory = directoryEntry.is_directory();
+
+            if (!isDirectory && m_assetManager->IsAssetFile(path) || path.filename() == "AssetRegistry.json")
+                continue;
 
             ImGui::PushID(filenameString.c_str());
             ImGui::BeginGroup();
@@ -106,6 +110,17 @@ void AssetsExplorerInterface::OnImGuiRender()
             if (ImGui::BeginPopupContextItem("##context"))
             {
                 s_selectedFile = path;
+                AssetHandle handle = m_assetManager->GetAssetHandle(path);
+
+                if (handle)
+                {
+                    if (ImGui::MenuItem("Import"))
+                    {
+                        handleToImport = handle;
+                    }
+                    ImGui::Separator();
+                }
+
                 if (ImGui::MenuItem("Delete"))
                 {
                     pathToDelete = path;
@@ -139,6 +154,11 @@ void AssetsExplorerInterface::OnImGuiRender()
             {
                 s_selectedFile.clear();
             }
+        }
+
+        if (handleToImport)
+        {
+            m_assetManager->GetAsset(handleToImport);
         }
     }
 
@@ -178,8 +198,7 @@ void AssetsExplorerInterface::OnFileDropped(const char *path, float x, float y)
             if (m_assetManager->IsAssetFile(destinationPath))
             {
                 AssetHandle handle = m_assetManager->RegisterAsset(destinationPath);
-                if (handle)
-                    m_assetManager->GetAsset(handle);
+                m_assetManager->SerializeAssetRegistry();
             }
         }
     }
