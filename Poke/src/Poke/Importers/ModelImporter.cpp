@@ -24,7 +24,7 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
     std::vector<AssetHandle> meshHandles(scene->mNumMeshes);
     for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
     {
-        uint64_t detID = GenerateDeterministicUUID(metadata.sourcePath.string(), i);
+        uint64_t detID = GenerateSubUUID(static_cast<uint64_t>(metadata.handle), i);
         AssetHandle meshHandle = AssetHandle(detID);
         std::shared_ptr<Mesh> mesh = MeshImporter::LoadMesh(scene->mMeshes[i], meshHandle);
 
@@ -36,7 +36,7 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
         }
 
         meshHandles[i] = meshHandle;
-        result.generatedAssets.push_back(mesh);
+        result.subAssets.push_back(mesh);
     }
 
     Model::Node rootNode = ProcessNode(scene->mRootNode, scene, meshHandles);

@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <string>
 
 namespace Poke
 {
@@ -21,18 +20,9 @@ namespace Poke
         uint64_t m_uuid;
     };
 
-    inline uint64_t GenerateDeterministicUUID(const std::string &identifier, uint32_t index)
+    inline uint64_t GenerateSubUUID(uint64_t parentUUID, uint32_t subIndex)
     {
-        std::string value = identifier + ":" + std::to_string(index);
-        uint64_t hash = 14695981039346656037ull;
-
-        for (unsigned char character : value)
-        {
-            hash ^= character;
-            hash *= 1099511628211ull;
-        }
-
-        return hash;
+        return parentUUID ^ (std::hash<uint32_t>()(subIndex) + 0x9e3779b9 + (parentUUID << 6) + (parentUUID >> 2));
     }
 }
 
