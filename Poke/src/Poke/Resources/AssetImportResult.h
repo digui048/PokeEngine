@@ -11,7 +11,7 @@ namespace Poke
     struct AssetImportResult
     {
         std::shared_ptr<Asset> asset;
-        std::vector<std::shared_ptr<Asset>> subAssets;
+        std::vector<std::shared_ptr<Asset>> generatedAssets;
     };
 }
 

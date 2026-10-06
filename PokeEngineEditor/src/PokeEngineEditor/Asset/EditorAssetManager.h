@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <chrono>
 #include <vector>
+#include <functional>
+#include <algorithm>
 
 namespace Poke
 {
@@ -33,10 +35,12 @@ namespace Poke
         AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
 
+        std::vector<AssetHandle> GetAssetHandlesInDirectory(const std::filesystem::path &directoryPath) const;
+
         void ScanDirectoryAssets(const std::filesystem::path &directoryPath);
         AssetImportResult LoadAsset(const AssetMetaData &metadata);
         AssetHandle RegisterAsset(const std::filesystem::path &filePath);
-        AssetHandle RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex);
+        AssetHandle RegisterGeneratedAsset(const std::shared_ptr<Asset> &asset, const std::filesystem::path &sourcePath, uint32_t generatedAssetIndex);
 
         bool IsAssetFile(const std::filesystem::path &filePath) const;
 
@@ -45,7 +49,7 @@ namespace Poke
 
     private:
         bool ImportAndSerializeAsset(AssetHandle handle);
-        bool SerializeAssetFile(const AssetMetaData &metadata) const;
+        bool SerializeAssetFile(const AssetMetaData &metadata, const std::shared_ptr<Asset> &asset = nullptr) const;
 
         void InvalidateAsset(AssetHandle handle);
         void RemoveMissingAssets();
