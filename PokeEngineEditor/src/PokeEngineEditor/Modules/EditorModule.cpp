@@ -48,7 +48,7 @@ void EditorModule::OnInit()
     m_scene->OnInit();
 
     AddInterface<HierarchyInterface>(m_scene.get());
-    AddInterface<InspectorInterface>();
+    AddInterface<InspectorInterface>(m_assetManager.get());
     AddInterface<MainMenuBarInterface>();
     AddInterface<AssetsExplorerInterface>(m_projectDir, m_assetManager.get());
 

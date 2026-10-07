@@ -2,6 +2,7 @@
 #include "Poke/Core/Log.h"
 
 #include "Poke/Importers/TextureImporter.h"
+#include "Poke/Utils/ImGuiUtils.h"
 
 #include <imgui.h>
 
@@ -112,6 +113,11 @@ void AssetsExplorerInterface::OnImGuiRender()
                 s_selectedFile = path;
             }
 
+            if (assetHandle)
+            {
+                BeginDragDropSourcePayload(PAYLOAD_ASSET_HANDLE, assetHandle, filenameString.c_str());
+            }
+
             ImGui::PopStyleColor();
 
             if (isModel)
@@ -183,6 +189,11 @@ void AssetsExplorerInterface::OnImGuiRender()
                             s_selectedFile = meshMetadata.filePath;
                         }
 
+                        if (meshHandle)
+                        {
+                            BeginDragDropSourcePayload(PAYLOAD_ASSET_HANDLE, meshHandle, meshFilename.c_str());
+                        }
+
                         ImGui::PopStyleColor();
                         ImGui::TextWrapped("%s", meshFilename.c_str());
 
@@ -194,7 +205,7 @@ void AssetsExplorerInterface::OnImGuiRender()
                             rowRects.push_back({itemMin, itemMax});
                         else
                         {
-                            std::pair<ImVec2,ImVec2>& current = rowRects.back();
+                            std::pair<ImVec2, ImVec2> &current = rowRects.back();
                             current.first.x = std::min(current.first.x, itemMin.x);
                             current.first.y = std::min(current.first.y, itemMin.y);
                             current.second.x = std::max(current.second.x, itemMax.x);
@@ -211,15 +222,15 @@ void AssetsExplorerInterface::OnImGuiRender()
                     drawList->PushClipRect(winMin, winMax, false);
 
                     const float rectPadding = 4.0f;
-                    for (const auto& rect : rowRects)
+                    for (const auto &rect : rowRects)
                     {
                         ImVec2 paddedMin = ImVec2(rect.first.x - rectPadding, rect.first.y - rectPadding);
                         ImVec2 paddedMax = ImVec2(rect.second.x + rectPadding, rect.second.y + rectPadding);
-                        
+
                         drawList->AddRectFilled(paddedMin, paddedMax, IM_COL32(40, 100, 180, 50), 4.0f);
                         drawList->AddRect(paddedMin, paddedMax, IM_COL32(70, 150, 240, 220), 4.0f, 0, 1.5f);
                     }
-                    
+
                     drawList->PopClipRect();
                     drawList->ChannelsMerge();
                 }

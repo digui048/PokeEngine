@@ -3,6 +3,7 @@
 #include "Poke/Scene/GameObject.h"
 #include "Poke/Scene/Components/TransformComponent.h"
 #include "Poke/Scene/Components/MeshRendererComponent.h"
+#include "Poke/Utils/ImGuiUtils.h"
 
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -24,11 +25,11 @@ void InspectorInterface::OnImGuiRender()
         {
             if (component->GetType() == ComponentType::TRANSFORM)
             {
-                DrawTransformComponent(static_cast<TransformComponent*>(component.get()));
+                DrawTransformComponent(static_cast<TransformComponent *>(component.get()));
             }
             else if (component->GetType() == ComponentType::MESH_RENDERER)
             {
-                DrawMeshComponent(static_cast<MeshRendererComponent*>(component.get()));
+                DrawMeshComponent(static_cast<MeshRendererComponent *>(component.get()));
             }
         }
     }
@@ -58,10 +59,58 @@ void InspectorInterface::DrawTransformComponent(TransformComponent *transform)
 
 void InspectorInterface::DrawMeshComponent(MeshRendererComponent *mesh)
 {
-    if (ImGui::CollapsingHeader("MeshComponent", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("MeshRenderer", ImGuiTreeNodeFlags_DefaultOpen))
     {
+        bool hasMesh = (mesh->GetMesh() != nullptr);
+
+        ImGui::Text("Mesh Asset:");
+        ImGui::SameLine();
+
+        float xButtonWidth = ImGui::GetFrameHeight();
+        float slotWidth = hasMesh ? (ImGui::GetContentRegionAvail().x - xButtonWidth - ImGui::GetStyle().ItemSpacing.x) : ImGui::GetContentRegionAvail().x;
+
+        if (!hasMesh)
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+
+        std::string meshLabel = hasMesh ? "Mesh Assigned" : "None (Mesh)";
+        ImGui::Button(meshLabel.c_str(), ImVec2(slotWidth, 0.0f));
+
+        if (!hasMesh)
+            ImGui::PopStyleColor();
+
+        AssetHandle droppedHandle = 0;
+        if (AcceptDragDropTargetPayload(PAYLOAD_ASSET_HANDLE, droppedHandle))
+        {
+            if (static_cast<uint64_t>(droppedHandle) != 0)
+            {
+                std::shared_ptr<Asset> asset = m_assetManager->GetAsset(droppedHandle);
+                std::shared_ptr<Mesh> newMesh = std::dynamic_pointer_cast<Mesh>(asset);
+
+                if (newMesh)
+                    mesh->SetMesh(newMesh);
+            }
+        }
+
+        if (hasMesh)
+        {
+            ImGui::SameLine();
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.15f, 0.15f, 0.6f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.25f, 0.25f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.35f, 0.35f, 1.0f));
+        
+            if (ImGui::Button("X##ClearMesh", ImVec2(xButtonWidth, 0.0f)))
+                mesh->SetMesh(nullptr);
+
+            ImGui::PopStyleColor(3);
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Clear / Remove Mesh");
+        }
+
+        ImGui::Separator();
         ImGui::Text("Vertices: %zu", mesh->GetVerticesCount());
         ImGui::Text("Indices: %zu", mesh->GetIndicesCount());
-        ImGui::Text("Triangles: %zu", mesh->GetIndicesCount()/ 3);
+        ImGui::Text("Triangles: %zu", mesh->GetIndicesCount() / 3);
     }
 }
