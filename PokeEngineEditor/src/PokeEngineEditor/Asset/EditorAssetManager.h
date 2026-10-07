@@ -33,6 +33,8 @@ namespace Poke
         AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
 
+        std::vector<AssetHandle> GetModelMeshes(AssetHandle modelHandle) const;
+
         void ScanDirectoryAssets(const std::filesystem::path &directoryPath);
         AssetImportResult LoadAsset(const AssetMetaData &metadata);
         AssetHandle RegisterAsset(const std::filesystem::path &filePath);

@@ -55,7 +55,9 @@ void AssetsExplorerInterface::OnImGuiRender()
 
     static float padding = 16.0f;
     static float thumbnailSize = 50.0f;
-    float cellSize = thumbnailSize + padding;
+    float arrowSize = ImGui::GetFrameHeight();
+
+    float cellSize = thumbnailSize + padding + arrowSize;
 
     float panelWidth = ImGui::GetContentRegionAvail().x;
     int columnCount = static_cast<int>(panelWidth / cellSize);
@@ -76,15 +78,30 @@ void AssetsExplorerInterface::OnImGuiRender()
             std::string filenameString = path.filename().string();
             bool isDirectory = directoryEntry.is_directory();
 
+            AssetHandle assetHandle = m_assetManager->GetAssetHandle(path);
+            if (assetHandle)
+            {
+                const AssetMetaData &metadata = m_assetManager->GetMetaData(assetHandle);
+
+                if (metadata.IsSubAsset())
+                    continue;
+            }
+
             if (!isDirectory && m_assetManager->IsAssetFile(path) || path.filename() == "AssetRegistry.json")
                 continue;
 
             ImGui::PushID(filenameString.c_str());
+
+            bool isModel = assetHandle && m_assetManager->GetAssetType(assetHandle) == AssetType::Model;
+            bool isExpanded = isModel && m_expandedModels.contains(assetHandle);
+
             ImGui::BeginGroup();
             Texture *icon = directoryEntry.is_directory() ? m_directoryIcon.get() : m_fileIcon.get();
             ImTextureID textureID = icon ? icon->GetImGuiTextureID() : (ImTextureID)0;
 
             bool isSelected = (s_selectedFile == path);
+            float imageStartY = ImGui::GetCursorPosY();
+
             if (isSelected)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.8f, 0.5f));
             else
@@ -96,8 +113,117 @@ void AssetsExplorerInterface::OnImGuiRender()
             }
 
             ImGui::PopStyleColor();
+
+            if (isModel)
+            {
+                ImGui::SameLine(0.0f, 4.0f);
+
+                const float arrowSize = ImGui::GetFrameHeight();
+
+                ImGui::SetCursorPosY(imageStartY + (thumbnailSize - arrowSize) * 0.5f);
+
+                ImGui::PushID("arrow");
+                if (ImGui::ArrowButton("##expand", isExpanded ? ImGuiDir_Down : ImGuiDir_Right))
+                {
+                    if (isExpanded)
+                        m_expandedModels.erase(assetHandle);
+                    else
+                    {
+                        m_expandedModels.insert(assetHandle);
+                        std::shared_ptr<Asset> model = m_assetManager->GetAsset(assetHandle);
+
+                        if (!model)
+                            m_expandedModels.erase(assetHandle);
+                    }
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::SetCursorPosY(imageStartY + thumbnailSize + ImGui::GetStyle().ItemSpacing.y);
+
             ImGui::TextWrapped("%s", filenameString.c_str());
             ImGui::EndGroup();
+
+            if (isModel && isExpanded)
+            {
+                std::vector<AssetHandle> meshes = m_assetManager->GetModelMeshes(assetHandle);
+                if (!meshes.empty())
+                {
+                    ImDrawList *drawList = ImGui::GetWindowDrawList();
+                    drawList->ChannelsSplit(2);
+                    drawList->ChannelsSetCurrent(1);
+
+                    std::vector<std::pair<ImVec2, ImVec2>> rowRects;
+
+                    for (AssetHandle meshHandle : meshes)
+                    {
+                        ImGui::NextColumn();
+
+                        ImVec2 itemMin = ImGui::GetCursorScreenPos();
+
+                        const AssetMetaData &meshMetadata = m_assetManager->GetMetaData(meshHandle);
+                        std::string meshFilename = meshMetadata.filePath.filename().string();
+
+                        ImGui::PushID(static_cast<uint64_t>(meshHandle));
+                        ImGui::BeginGroup();
+
+                        Texture *meshIcon = m_fileIcon.get();
+                        ImTextureID meshTextureID = meshIcon ? meshIcon->GetImGuiTextureID() : (ImTextureID)0;
+
+                        bool meshSelected = s_selectedFile == meshMetadata.filePath;
+
+                        if (meshSelected)
+                            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.4f, 0.8f, 0.5f));
+                        else
+                            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+                        if (ImGui::ImageButton("##icon", meshTextureID, {thumbnailSize, thumbnailSize}, {0, 0}, {1, 1}))
+                        {
+                            s_selectedFile = meshMetadata.filePath;
+                        }
+
+                        ImGui::PopStyleColor();
+                        ImGui::TextWrapped("%s", meshFilename.c_str());
+
+                        ImGui::EndGroup();
+
+                        ImVec2 itemMax = ImGui::GetItemRectMax();
+
+                        if (rowRects.empty() || std::abs(itemMin.y - rowRects.back().first.y) > 8.0f)
+                            rowRects.push_back({itemMin, itemMax});
+                        else
+                        {
+                            std::pair<ImVec2,ImVec2>& current = rowRects.back();
+                            current.first.x = std::min(current.first.x, itemMin.x);
+                            current.first.y = std::min(current.first.y, itemMin.y);
+                            current.second.x = std::max(current.second.x, itemMax.x);
+                            current.second.y = std::max(current.second.y, itemMax.y);
+                        }
+
+                        ImGui::PopID();
+                    }
+
+                    drawList->ChannelsSetCurrent(0);
+
+                    ImVec2 winMin = ImGui::GetWindowPos();
+                    ImVec2 winMax = ImVec2(winMin.x + ImGui::GetWindowSize().x, winMin.y + ImGui::GetWindowSize().y);
+                    drawList->PushClipRect(winMin, winMax, false);
+
+                    const float rectPadding = 4.0f;
+                    for (const auto& rect : rowRects)
+                    {
+                        ImVec2 paddedMin = ImVec2(rect.first.x - rectPadding, rect.first.y - rectPadding);
+                        ImVec2 paddedMax = ImVec2(rect.second.x + rectPadding, rect.second.y + rectPadding);
+                        
+                        drawList->AddRectFilled(paddedMin, paddedMax, IM_COL32(40, 100, 180, 50), 4.0f);
+                        drawList->AddRect(paddedMin, paddedMax, IM_COL32(70, 150, 240, 220), 4.0f, 0, 1.5f);
+                    }
+                    
+                    drawList->PopClipRect();
+                    drawList->ChannelsMerge();
+                }
+            }
 
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {

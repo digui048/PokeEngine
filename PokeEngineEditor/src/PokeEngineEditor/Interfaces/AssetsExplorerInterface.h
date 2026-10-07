@@ -7,6 +7,7 @@
 #include "PokeEngineEditor/Asset/EditorAssetManager.h"
 
 #include <filesystem>
+#include <unordered_set>
 
 namespace Poke
 {
@@ -34,6 +35,8 @@ namespace Poke
     private:
         std::filesystem::path m_assetsDirectory;
         std::filesystem::path m_currentDirectory;
+
+        std::unordered_set<AssetHandle> m_expandedModels;
 
         static std::filesystem::path s_selectedFile;
 

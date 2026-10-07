@@ -7,6 +7,8 @@
 #include "Poke/Utils/Json.h"
 #include "Poke/Core/Log.h"
 
+#include <algorithm>
+
 using namespace Poke;
 
 EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirectory)
@@ -146,6 +148,27 @@ const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
 
     return AssetMetaData::Null;
 }
+
+std::vector<AssetHandle> EditorAssetManager::GetModelMeshes(AssetHandle modelHandle) const
+{
+    std::vector<AssetHandle> meshes;
+
+    if (!IsAssetHandleValid(modelHandle))
+        return meshes;
+
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (metadata.parentHandle == modelHandle && metadata.type == AssetType::Mesh)
+            meshes.push_back(handle);
+    }
+
+    std::sort(meshes.begin(), meshes.end(), [this](AssetHandle a, AssetHandle b) {
+        return GetMetaData(a).subAssetIndex < GetMetaData(b).subAssetIndex;
+    });
+
+    return meshes;
+}
+
 
 void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &directoryPath)
 {
@@ -325,7 +348,7 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         }
     }
 
-    POKE_CORE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
+    POKE_CORE_INFO("[EditorAssetManager] Deserialized {0} assets from registry", m_assetRegistry.size());
     return true;
 }
 
