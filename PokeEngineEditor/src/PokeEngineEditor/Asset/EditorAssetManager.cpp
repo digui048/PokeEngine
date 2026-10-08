@@ -7,6 +7,8 @@
 #include "Poke/Utils/Json.h"
 #include "Poke/Core/Log.h"
 
+#include <algorithm>
+
 using namespace Poke;
 
 EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirectory)
@@ -24,62 +26,84 @@ EditorAssetManager::EditorAssetManager(const std::filesystem::path &projectDirec
 
 std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 {
-    if (IsAssetLoaded(handle))
-        return m_loadedAssets.at(handle);
-
     if (!IsAssetHandleValid(handle))
         return nullptr;
 
     const AssetMetaData &metadata = m_assetRegistry.at(handle);
-    std::filesystem::path binaryPath = GetBinaryPath(metadata);
+    AssetHandle sourceHandle = metadata.IsSubAsset() ? metadata.parentHandle : handle;
 
-    std::shared_ptr<Asset> asset = nullptr;
+    if (!IsAssetHandleValid(sourceHandle))
+        return nullptr;
 
-    if (std::filesystem::exists(binaryPath))
+    const AssetMetaData &sourceMetadata = m_assetRegistry.at(sourceHandle);
+
+    if (IsAssetSourceMissing(sourceMetadata))
     {
-        auto it = m_assetSerializers.find(metadata.type);
-        if (it != m_assetSerializers.end())
+        POKE_CORE_WARN("[AssetManager] Source file missing: {0}", sourceMetadata.sourcePath.string());
+
+        RemoveAsset(sourceHandle);
+        return nullptr;
+    }
+
+    if (IsAssetModified(sourceMetadata))
+    {
+        POKE_CORE_WARN("[AssetManager] Source asset modified: {0}", sourceMetadata.sourcePath.string());
+
+        InvalidateAsset(sourceHandle);
+
+        if (!ImportAndSerializeAsset(sourceHandle))
+            return nullptr;
+    }
+
+    if (!IsAssetHandleValid(handle))
+        return nullptr;
+
+    if (IsAssetLoaded(handle))
+        return m_loadedAssets.at(handle);
+
+    const AssetMetaData &currentMetadata = m_assetRegistry.at(handle);
+    std::filesystem::path binaryPath = GetBinaryPath(currentMetadata);
+
+    auto serializerIt = m_assetSerializers.find(currentMetadata.type);
+
+    if (std::filesystem::exists(binaryPath) && serializerIt != m_assetSerializers.end())
+    {
+        std::shared_ptr<Asset> asset = serializerIt->second->DeserializeFromLibrary(currentMetadata, binaryPath);
+
+        if (asset)
         {
-            asset = it->second->DeserializeFromLibrary(metadata, binaryPath);
+            m_loadedAssets[handle] = asset;
+            return asset;
         }
     }
 
-    if (!asset)
+    if (currentMetadata.IsSubAsset())
     {
-        AssetImportResult result = LoadAsset(metadata);
-        asset = result.asset;
+        AssetHandle parentHandle = currentMetadata.parentHandle;
 
-        if (!asset)
+        if (!IsAssetHandleValid(parentHandle))
             return nullptr;
 
-        for (uint32_t i = 0; i < result.subAssets.size(); ++i)
-        {
-            const auto &subAsset = result.subAssets[i];
-            AssetHandle subHandle = RegisterSubAsset(subAsset, handle, i);
+        InvalidateAsset(parentHandle);
 
-            auto it = m_assetSerializers.find(subAsset->GetType());
-            if (it != m_assetSerializers.end())
-            {
-                AssetMetaData subMetadata = m_assetRegistry.at(subHandle);
-                it->second->SerializeToLibrary(subMetadata, subAsset, GetBinaryPath(subMetadata));
-            }
-        }
+        if (!ImportAndSerializeAsset(parentHandle))
+            return nullptr;
 
-        auto it = m_assetSerializers.find(metadata.type);
-        if (it != m_assetSerializers.end())
-        {
-            it->second->SerializeToLibrary(metadata, asset, binaryPath);
-        }
+        auto it = m_loadedAssets.find(handle);
+        if (it != m_loadedAssets.end())
+            return it->second;
 
-        SerializeAssetRegistry();
+        return nullptr;
     }
 
-    if (asset)
-    {
-        m_loadedAssets[handle] = asset;
-    }
+    if (!ImportAndSerializeAsset(handle))
+        return nullptr;
 
-    return asset;
+    auto it = m_loadedAssets.find(handle);
+    if (it != m_loadedAssets.end())
+        return it->second;
+
+    return nullptr;
 }
 
 bool EditorAssetManager::IsAssetHandleValid(AssetHandle handle) const
@@ -108,6 +132,12 @@ AssetHandle EditorAssetManager::GetAssetHandle(const std::filesystem::path &file
             return handle;
     }
 
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (!metadata.IsSubAsset() && metadata.sourcePath == filePath)
+            return handle;
+    }
+
     return AssetHandle();
 }
 
@@ -119,6 +149,27 @@ const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
     return AssetMetaData::Null;
 }
 
+std::vector<AssetHandle> EditorAssetManager::GetModelMeshes(AssetHandle modelHandle) const
+{
+    std::vector<AssetHandle> meshes;
+
+    if (!IsAssetHandleValid(modelHandle))
+        return meshes;
+
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (metadata.parentHandle == modelHandle && metadata.type == AssetType::Mesh)
+            meshes.push_back(handle);
+    }
+
+    std::sort(meshes.begin(), meshes.end(), [this](AssetHandle a, AssetHandle b) {
+        return GetMetaData(a).subAssetIndex < GetMetaData(b).subAssetIndex;
+    });
+
+    return meshes;
+}
+
+
 void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &directoryPath)
 {
     if (!std::filesystem::exists(directoryPath))
@@ -126,6 +177,8 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
         POKE_CORE_WARN("[AssetManager] Directory does not exist: {0}", directoryPath.string());
         return;
     }
+
+    RemoveMissingAssets();
 
     bool newAssetDiscovered = false;
 
@@ -145,7 +198,7 @@ void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &direct
         bool alreadyRegistered = false;
         for (const auto &[handle, metadata] : m_assetRegistry)
         {
-            if (metadata.filePath == filePath)
+            if (metadata.sourcePath == filePath)
             {
                 alreadyRegistered = true;
                 break;
@@ -174,27 +227,42 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
 {
     AssetMetaData metadata;
     metadata.handle = AssetHandle();
-    metadata.filePath = filePath;
+    metadata.sourcePath = filePath;
     metadata.type = GetAssetTypeFromExtension(filePath.extension());
+
+    if (metadata.type == AssetType::None)
+        return AssetHandle();
+
+    metadata.filePath = GetProjectAssetPath(filePath, metadata.type);
+    metadata.lastWriteTime = GetFileLastWriteTime(filePath);
 
     m_assetRegistry[metadata.handle] = metadata;
 
-    POKE_CORE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), filePath.string());
+    if (!SerializeAssetFile(metadata))
+        return AssetHandle();
+
+    POKE_CORE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), metadata.filePath.string());
 
     return metadata.handle;
 }
 
 AssetHandle Poke::EditorAssetManager::RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex)
 {
-    if (!asset)
+    if (!asset || !IsAssetHandleValid(parentHandle))
         return AssetHandle();
+
+    const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
 
     AssetMetaData metadata;
     metadata.handle = asset->GetHandle();
     metadata.type = asset->GetType();
-    metadata.filePath = "";
     metadata.parentHandle = parentHandle;
     metadata.subAssetIndex = subAssetIndex;
+    metadata.sourcePath = parentMetadata.sourcePath;
+    metadata.lastWriteTime = parentMetadata.lastWriteTime;
+
+    std::string filename = parentMetadata.filePath.stem().string() + "_" + std::to_string(subAssetIndex) + GetAssetExtensionFromType(metadata.type);
+    metadata.filePath = parentMetadata.filePath.parent_path() / filename;
 
     m_assetRegistry[metadata.handle] = metadata;
     m_loadedAssets[metadata.handle] = asset;
@@ -202,6 +270,11 @@ AssetHandle Poke::EditorAssetManager::RegisterSubAsset(const std::shared_ptr<Ass
     POKE_CORE_INFO("[AssetManager] Registered subasset [{0}] -> parent {1}", static_cast<uint64_t>(metadata.handle), static_cast<uint64_t>(metadata.parentHandle));
 
     return metadata.handle;
+}
+
+bool EditorAssetManager::IsAssetFile(const std::filesystem::path &filePath) const
+{
+    return IsAssetExtension(filePath.extension());
 }
 
 bool EditorAssetManager::SerializeAssetRegistry()
@@ -216,7 +289,9 @@ bool EditorAssetManager::SerializeAssetRegistry()
         JsonNode item;
         item.Set("Handle", static_cast<uint64_t>(metadata.handle));
         item.Set("Type", AssetTypeToString(metadata.type));
+        item.Set("SourcePath", metadata.sourcePath.string());
         item.Set("FilePath", metadata.filePath.string());
+        item.Set("LastWriteTime", metadata.lastWriteTime);
 
         uint64_t parentHandle = static_cast<uint64_t>(metadata.parentHandle);
         if (parentHandle != 0)
@@ -261,9 +336,10 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         AssetMetaData metadata;
         metadata.handle = AssetHandle(item.Get<uint64_t>("Handle", 0));
         metadata.type = AssetTypeFromString(item.Get<std::string>("Type", "None"));
+        metadata.sourcePath = std::filesystem::path(item.Get<std::string>("SourcePath", ""));
         metadata.filePath = std::filesystem::path(item.Get<std::string>("FilePath", ""));
+        metadata.lastWriteTime = item.Get<uint64_t>("LastWriteTime", 0);
         metadata.parentHandle = AssetHandle(item.Get<uint64_t>("ParentHandle", 0));
-
         metadata.subAssetIndex = item.Get<uint32_t>("SubAssetIndex", std::numeric_limits<uint32_t>::max());
 
         if (metadata)
@@ -272,8 +348,238 @@ bool EditorAssetManager::DeserializeAssetRegistry()
         }
     }
 
-    POKE_CORE_INFO("[EditorAssetManager] Loaded {0} assets from registry", m_assetRegistry.size());
+    POKE_CORE_INFO("[EditorAssetManager] Deserialized {0} assets from registry", m_assetRegistry.size());
     return true;
+}
+
+bool EditorAssetManager::ImportAndSerializeAsset(AssetHandle handle)
+{
+    if (!IsAssetHandleValid(handle))
+        return false;
+
+    const AssetMetaData initialMetadata = m_assetRegistry.at(handle);
+    AssetImportResult result = LoadAsset(initialMetadata);
+
+    if (!result.asset)
+        return false;
+
+    for (uint32_t i = 0; i < result.subAssets.size(); ++i)
+    {
+        const auto &subAsset = result.subAssets[i];
+        AssetHandle subHandle = RegisterSubAsset(subAsset, handle, i);
+
+        auto serializerIt = m_assetSerializers.find(subAsset->GetType());
+        if (serializerIt == m_assetSerializers.end())
+            return false;
+
+        const AssetMetaData &subMetadata = m_assetRegistry.at(subHandle);
+
+        if (!serializerIt->second->SerializeToLibrary(subMetadata, subAsset, GetBinaryPath(subMetadata)))
+            return false;
+
+        if (!SerializeAssetFile(subMetadata))
+            return false;
+    }
+
+    auto serializerIt = m_assetSerializers.find(initialMetadata.type);
+    if (serializerIt == m_assetSerializers.end())
+        return false;
+
+    const AssetMetaData &metadata = m_assetRegistry.at(handle);
+
+    if (!serializerIt->second->SerializeToLibrary(metadata, result.asset, GetBinaryPath(metadata)))
+        return false;
+
+    if (!SerializeAssetFile(metadata))
+        return false;
+
+    m_loadedAssets[metadata.handle] = result.asset;
+
+    AssetMetaData &updatedMetadata = m_assetRegistry.at(handle);
+    updatedMetadata.lastWriteTime = GetFileLastWriteTime(updatedMetadata.sourcePath);
+
+    SerializeAssetRegistry();
+
+    return true;
+}
+
+bool EditorAssetManager::SerializeAssetFile(const AssetMetaData &metadata) const
+{
+    JsonNode root;
+    JsonNode assetNode;
+
+    assetNode.Set("Handle", static_cast<uint64_t>(metadata.handle));
+    assetNode.Set("Type", AssetTypeToString(metadata.type));
+    assetNode.Set("SourcePath", metadata.sourcePath.string());
+
+    uint64_t parentHandle = static_cast<uint64_t>(metadata.parentHandle);
+    if (parentHandle != 0)
+    {
+        assetNode.Set("ParentHandle", parentHandle);
+        assetNode.Set("SubAssetIndex", metadata.subAssetIndex);
+    }
+
+    if (metadata.type == AssetType::Model)
+    {
+        auto &meshes = assetNode.GetInternal()["Meshes"] = nlohmann::json::array();
+
+        for (const auto &[handle, subMetadata] : m_assetRegistry)
+        {
+            if (subMetadata.parentHandle == metadata.handle && subMetadata.type == AssetType::Mesh)
+            {
+                meshes.push_back(static_cast<uint64_t>(handle));
+            }
+        }
+    }
+
+    root.GetInternal()["Asset"] = assetNode.GetInternal();
+    std::filesystem::create_directories(metadata.filePath.parent_path());
+
+    return Json::SaveToFile(root, metadata.filePath);
+}
+
+void EditorAssetManager::InvalidateAsset(AssetHandle handle)
+{
+    if (!IsAssetHandleValid(handle))
+        return;
+
+    AssetHandle parentHandle = handle;
+
+    if (m_assetRegistry.at(handle).IsSubAsset())
+        parentHandle = m_assetRegistry.at(handle).parentHandle;
+
+    if (!IsAssetHandleValid(parentHandle))
+        return;
+
+    m_loadedAssets.erase(parentHandle);
+
+    const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
+    std::filesystem::remove(parentMetadata.filePath);
+    std::filesystem::remove(GetBinaryPath(parentMetadata));
+
+    std::vector<AssetHandle> subAssetHandles;
+    for (const auto &[subHandle, metadata] : m_assetRegistry)
+    {
+        if (metadata.parentHandle == parentHandle)
+            subAssetHandles.push_back(subHandle);
+    }
+
+    for (AssetHandle subHandle : subAssetHandles)
+    {
+        auto it = m_assetRegistry.find(subHandle);
+        if (it == m_assetRegistry.end())
+            continue;
+
+        m_loadedAssets.erase(subHandle);
+        std::filesystem::remove(it->second.filePath);
+        std::filesystem::remove(GetBinaryPath(it->second));
+
+        m_assetRegistry.erase(it);
+    }
+
+    SerializeAssetRegistry();
+}
+
+void EditorAssetManager::RemoveAsset(AssetHandle handle)
+{
+    if (!IsAssetHandleValid(handle))
+        return;
+
+    AssetHandle parentHandle = handle;
+
+    if (m_assetRegistry.at(handle).IsSubAsset())
+        parentHandle = m_assetRegistry.at(handle).parentHandle;
+
+    if (!IsAssetHandleValid(parentHandle))
+        return;
+
+    std::vector<AssetHandle> subAssetHandles;
+    for (const auto &[subHandle, metadata] : m_assetRegistry)
+    {
+        if (metadata.parentHandle == parentHandle)
+            subAssetHandles.push_back(subHandle);
+    }
+
+    for (AssetHandle subHandle : subAssetHandles)
+    {
+        auto it = m_assetRegistry.find(subHandle);
+        if (it == m_assetRegistry.end())
+            continue;
+
+        m_loadedAssets.erase(subHandle);
+        std::filesystem::remove(it->second.filePath);
+        std::filesystem::remove(GetBinaryPath(it->second));
+
+        m_assetRegistry.erase(it);
+    }
+
+    m_loadedAssets.erase(parentHandle);
+
+    const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
+    std::filesystem::remove(parentMetadata.filePath);
+    std::filesystem::remove(GetBinaryPath(parentMetadata));
+
+    POKE_CORE_INFO("[AssetManager] Remove asset with type: {0} and path {1}", AssetTypeToString(parentMetadata.type), parentMetadata.sourcePath.string());
+
+    m_assetRegistry.erase(parentHandle);
+
+    SerializeAssetRegistry();
+}
+
+void EditorAssetManager::RemoveMissingAssets()
+{
+    std::vector<AssetHandle> missingAssets;
+
+    for (const auto &[handle, metadata] : m_assetRegistry)
+    {
+        if (metadata.IsSubAsset())
+            continue;
+
+        if (metadata.sourcePath.empty())
+            continue;
+
+        if (!std::filesystem::exists(metadata.sourcePath))
+            missingAssets.push_back(handle);
+    }
+
+    for (AssetHandle handle : missingAssets)
+    {
+        const auto it = m_assetRegistry.find(handle);
+        if (it == m_assetRegistry.end())
+            continue;
+
+        POKE_CORE_WARN("[AssetManager] Source file removed: {0}", it->second.sourcePath.string());
+
+        RemoveAsset(handle);
+    }
+}
+
+std::filesystem::path EditorAssetManager::GetProjectAssetPath(const std::filesystem::path &sourcePath, AssetType type) const
+{
+    std::filesystem::path path = sourcePath;
+    switch (type)
+    {
+    case AssetType::Texture:
+        path.replace_extension(".tex");
+        break;
+
+    case AssetType::Model:
+        path.replace_extension(".model");
+        break;
+
+    case AssetType::Material:
+        path.replace_extension(".mat");
+        break;
+
+    case AssetType::Mesh:
+        path.replace_extension(".mesh");
+        break;
+
+    default:
+        break;
+    }
+
+    return path;
 }
 
 std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &metadata) const
@@ -312,6 +618,35 @@ bool EditorAssetManager::IsAssetExtension(const std::filesystem::path &extension
     return extension == ".png" || extension == ".jpg" || extension == ".fbx";
 }
 
+std::string EditorAssetManager::GetAssetExtensionFromType(AssetType type) const
+{
+    std::string extension;
+    switch (type)
+    {
+    case AssetType::Model:
+        extension = ".model";
+        break;
+
+    case AssetType::Texture:
+        extension = ".tex";
+        break;
+
+    case AssetType::Material:
+        extension = ".mat";
+        break;
+
+    case AssetType::Mesh:
+        extension = ".mesh";
+        break;
+
+    default:
+        extension = "";
+        break;
+    }
+
+    return extension;
+}
+
 AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::path &extension) const
 {
     if (extension == ".png" || extension == ".jpg")
@@ -320,4 +655,51 @@ AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::p
         return AssetType::Model;
 
     return AssetType::None;
+}
+
+uint64_t EditorAssetManager::GetFileLastWriteTime(const std::filesystem::path &filePath) const
+{
+    if (!std::filesystem::exists(filePath))
+        return 0;
+
+    auto lastWriteTime = std::filesystem::last_write_time(filePath);
+
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(lastWriteTime.time_since_epoch()).count());
+}
+
+bool EditorAssetManager::IsAssetModified(const AssetMetaData &metadata) const
+{
+    if (metadata.IsSubAsset())
+    {
+        if (!IsAssetHandleValid(metadata.parentHandle))
+            return false;
+
+        return IsAssetModified(m_assetRegistry.at(metadata.parentHandle));
+    }
+
+    if (metadata.sourcePath.empty())
+        return false;
+
+    if (!std::filesystem::exists(metadata.sourcePath))
+        return false;
+
+    uint64_t currentLastWriteTime = GetFileLastWriteTime(metadata.sourcePath);
+
+    return currentLastWriteTime != metadata.lastWriteTime;
+}
+
+bool EditorAssetManager::IsAssetSourceMissing(const AssetMetaData &metadata) const
+{
+    if (metadata.IsSubAsset())
+    {
+        if (!IsAssetHandleValid(metadata.parentHandle))
+            return true;
+
+        return IsAssetSourceMissing(m_assetRegistry.at(metadata.parentHandle));
+    }
+
+    if (metadata.sourcePath.empty())
+        return true;
+
+    return !std::filesystem::exists(metadata.sourcePath);
 }

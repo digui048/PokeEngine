@@ -8,6 +8,8 @@
 
 #include <unordered_map>
 #include <filesystem>
+#include <chrono>
+#include <vector>
 
 namespace Poke
 {
@@ -22,26 +24,43 @@ namespace Poke
         ~EditorAssetManager() override = default;
 
         std::shared_ptr<Asset> GetAsset(AssetHandle handle) override;
+        void RemoveAsset(AssetHandle handle);
 
         bool IsAssetHandleValid(AssetHandle handle) const override;
         bool IsAssetLoaded(AssetHandle handle) const override;
         AssetType GetAssetType(AssetHandle handle) const override;
-        AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
 
+        AssetHandle GetAssetHandle(const std::filesystem::path &filePath) const;
         const AssetMetaData &GetMetaData(AssetHandle handle) const;
+
+        std::vector<AssetHandle> GetModelMeshes(AssetHandle modelHandle) const;
 
         void ScanDirectoryAssets(const std::filesystem::path &directoryPath);
         AssetImportResult LoadAsset(const AssetMetaData &metadata);
         AssetHandle RegisterAsset(const std::filesystem::path &filePath);
         AssetHandle RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex);
 
+        bool IsAssetFile(const std::filesystem::path &filePath) const;
+
         bool SerializeAssetRegistry();
         bool DeserializeAssetRegistry();
 
     private:
+        bool ImportAndSerializeAsset(AssetHandle handle);
+        bool SerializeAssetFile(const AssetMetaData &metadata) const;
+
+        void InvalidateAsset(AssetHandle handle);
+        void RemoveMissingAssets();
+
+        std::filesystem::path GetProjectAssetPath(const std::filesystem::path &sourcePath, AssetType type) const;
         std::filesystem::path GetBinaryPath(const AssetMetaData &metadata) const;
         bool IsAssetExtension(const std::filesystem::path &extension) const;
+        std::string GetAssetExtensionFromType(AssetType type) const;
         AssetType GetAssetTypeFromExtension(const std::filesystem::path &extension) const;
+
+        uint64_t GetFileLastWriteTime(const std::filesystem::path &filePath) const;
+        bool IsAssetModified(const AssetMetaData &metadata) const;
+        bool IsAssetSourceMissing(const AssetMetaData &metadata) const;
 
     private:
         AssetRegistry m_assetRegistry;

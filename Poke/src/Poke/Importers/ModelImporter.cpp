@@ -13,7 +13,7 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
     AssetImportResult result;
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
-    const aiScene *scene = importer.ReadFile(metadata.filePath.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = importer.ReadFile(metadata.sourcePath.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -24,7 +24,8 @@ AssetImportResult ModelImporter::LoadModel(const AssetMetaData &metadata)
     std::vector<AssetHandle> meshHandles(scene->mNumMeshes);
     for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
     {
-        AssetHandle meshHandle;
+        uint64_t detID = GenerateSubUUID(static_cast<uint64_t>(metadata.handle), i);
+        AssetHandle meshHandle = AssetHandle(detID);
         std::shared_ptr<Mesh> mesh = MeshImporter::LoadMesh(scene->mMeshes[i], meshHandle);
 
         if (!mesh)

@@ -4,14 +4,17 @@
 #include "EditorInterface.h"
 #include "Poke/Resources/Assets/Texture.h"
 
+#include "PokeEngineEditor/Asset/EditorAssetManager.h"
+
 #include <filesystem>
+#include <unordered_set>
 
 namespace Poke
 {
     class AssetsExplorerInterface : public EditorInterface
     {
     public:
-        AssetsExplorerInterface(const std::filesystem::path &path);
+        AssetsExplorerInterface(const std::filesystem::path &path, EditorAssetManager *assetManager);
         ~AssetsExplorerInterface() override {}
 
         void OnInit() override;
@@ -27,8 +30,13 @@ namespace Poke
         void RemoveFile(const char *path);
 
     private:
+        EditorAssetManager *m_assetManager;
+
+    private:
         std::filesystem::path m_assetsDirectory;
         std::filesystem::path m_currentDirectory;
+
+        std::unordered_set<AssetHandle> m_expandedModels;
 
         static std::filesystem::path s_selectedFile;
 

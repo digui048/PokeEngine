@@ -2,6 +2,7 @@
 #define INSPECTOR_INTERFACE_H
 
 #include "EditorInterface.h"
+#include "PokeEngineEditor/Asset/EditorAssetManager.h"
 
 namespace Poke
 {
@@ -11,7 +12,8 @@ namespace Poke
     class InspectorInterface : public EditorInterface
     {
     public:
-        InspectorInterface() : EditorInterface("Inspector") {}
+        InspectorInterface(EditorAssetManager *assetManager)
+            : EditorInterface("Inspector"), m_assetManager(assetManager) {}
 
         void OnInit() override {}
         void OnUpdate(float dt) override {}
@@ -21,6 +23,9 @@ namespace Poke
     private:
         void DrawTransformComponent(TransformComponent *transform);
         void DrawMeshComponent(MeshRendererComponent *mesh);
+
+    private:
+        EditorAssetManager *m_assetManager;
     };
 }
 

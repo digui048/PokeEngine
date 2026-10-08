@@ -2,12 +2,7 @@
 #define UUID_H
 
 #include <cstdint>
-
-namespace std
-{
-    template <typename T>
-    struct hash;
-}
+#include <functional>
 
 namespace Poke
 {
@@ -19,11 +14,16 @@ namespace Poke
         UUID(const UUID &) = default;
 
         operator uint64_t() const { return m_uuid; }
-        bool operator==(const UUID &other) const; 
+        bool operator==(const UUID &other) const;
 
     private:
         uint64_t m_uuid;
     };
+
+    inline uint64_t GenerateSubUUID(uint64_t parentUUID, uint32_t subIndex)
+    {
+        return parentUUID ^ (std::hash<uint32_t>()(subIndex) + 0x9e3779b9 + (parentUUID << 6) + (parentUUID >> 2));
+    }
 }
 
 namespace std

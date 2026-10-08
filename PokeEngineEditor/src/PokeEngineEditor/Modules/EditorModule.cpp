@@ -41,19 +41,16 @@ EditorModule::~EditorModule() = default;
 void EditorModule::OnInit()
 {
     m_assetManager = std::make_unique<EditorAssetManager>(m_projectDir);
+    AssetManager::SetActive(m_assetManager.get());
     m_assetManager->ScanDirectoryAssets(m_projectDir / "Assets");
 
     m_scene = std::make_unique<Scene>();
     m_scene->OnInit();
 
     AddInterface<HierarchyInterface>(m_scene.get());
-    AddInterface<InspectorInterface>();
+    AddInterface<InspectorInterface>(m_assetManager.get());
     AddInterface<MainMenuBarInterface>();
-    AddInterface<AssetsExplorerInterface>(m_projectDir);
-
-    m_assetManager = std::make_unique<EditorAssetManager>(m_projectDir);
-    AssetManager::SetActive(m_assetManager.get());
-    m_assetManager->ScanDirectoryAssets(m_projectDir / "Assets");
+    AddInterface<AssetsExplorerInterface>(m_projectDir, m_assetManager.get());
 
     AssetHandle shibaHandle = m_assetManager->GetAssetHandle(m_projectDir / "Assets/shiba.fbx");
     m_shibaEntity = m_scene->InstantiateModel(shibaHandle, "Shiba");
