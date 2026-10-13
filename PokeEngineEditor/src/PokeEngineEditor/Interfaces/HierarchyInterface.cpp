@@ -4,9 +4,11 @@
 #include "Poke/Scene/GameObject.h"
 
 #include <imgui.h>
+#include <utility>
 
 using namespace Poke;
 
+std::shared_ptr<Scene> HierarchyInterface::s_activeScene = nullptr;
 GameObject *HierarchyInterface::s_selectedEntity = nullptr;
 
 void HierarchyInterface::OnInit()
@@ -20,7 +22,13 @@ void HierarchyInterface::OnImGuiRender()
 
     ImGui::Begin(m_name.c_str(), &m_isOpen);
 
-    const auto root = m_scene->GetRoot();
+    if (!s_activeScene || !s_activeScene->GetRoot())
+    {
+        ImGui::End();
+        return;
+    }
+
+    const auto root = s_activeScene->GetRoot();
     for (const auto &object : root->GetChildren())
     {
         DrawEntityNode(object.get());
@@ -32,6 +40,12 @@ void HierarchyInterface::OnImGuiRender()
     }
 
     ImGui::End();
+}
+
+void HierarchyInterface::SetActiveScene(std::shared_ptr<Scene> scene)
+{
+    s_selectedEntity = nullptr;
+    s_activeScene = std::move(scene);
 }
 
 void HierarchyInterface::DrawEntityNode(GameObject *entity)

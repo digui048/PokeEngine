@@ -61,7 +61,6 @@ namespace Poke
         std::string m_projectName;
         std::filesystem::path m_projectDir;
 
-        std::unique_ptr<Scene> m_scene;
         GameObject *m_shibaEntity;
 
         std::shared_ptr<Texture> m_textureS;

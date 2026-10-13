@@ -44,16 +44,25 @@ void EditorModule::OnInit()
     AssetManager::SetActive(m_assetManager.get());
     m_assetManager->ScanDirectoryAssets(m_projectDir / "Assets");
 
-    m_scene = std::make_unique<Scene>();
-    m_scene->OnInit();
+    std::filesystem::path scenePath = m_projectDir / "Assets/MainScene.scene";
+    AssetHandle sceneHandle = m_assetManager->GetAssetHandle(scenePath);
 
-    AddInterface<HierarchyInterface>(m_scene.get());
+    if (static_cast<uint64_t>(sceneHandle) == 0)
+        sceneHandle = m_assetManager->RegisterAsset(scenePath);
+
+    std::shared_ptr<Scene> scene = std::static_pointer_cast<Scene>(m_assetManager->GetAsset(sceneHandle));
+    //m_scene = std::static_pointer_cast<Scene>(m_assetManager->GetAsset(sceneHandle));
+
+    if (!scene)
+    {
+        scene = std::make_shared<Scene>(sceneHandle);
+        scene->OnInit();
+    }
+
+    AddInterface<HierarchyInterface>(scene);
     AddInterface<InspectorInterface>(m_assetManager.get());
-    AddInterface<MainMenuBarInterface>();
+    AddInterface<MainMenuBarInterface>(m_assetManager.get(), m_projectDir);
     AddInterface<AssetsExplorerInterface>(m_projectDir, m_assetManager.get());
-
-    AssetHandle shibaHandle = m_assetManager->GetAssetHandle(m_projectDir / "Assets/shiba.fbx");
-    m_shibaEntity = m_scene->InstantiateModel(shibaHandle, "Shiba");
 
     VkPushConstantRange pushConstantRange;
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -74,11 +83,33 @@ void EditorModule::OnInit()
 
     m_materialS = MaterialImporter::LoadMaterial(m_textureS, m_defaultPipeline.get());
 
-    for (auto &child : m_shibaEntity->GetChildren())
+    if (scene->GetRoot() && scene->GetRoot()->GetChildren().empty())
     {
-        if (auto *mesh = child->GetComponent<MeshRendererComponent>())
+        AssetHandle shibaHandle = m_assetManager->GetAssetHandle(m_projectDir / "Assets/shiba.fbx");
+        m_shibaEntity = scene->InstantiateModel(shibaHandle, "Shiba");
+
+        for (auto &child : m_shibaEntity->GetChildren())
         {
-            mesh->SetMaterial(m_materialS);
+            if (auto *mesh = child->GetComponent<MeshRendererComponent>())
+            {
+                mesh->SetMaterial(m_materialS);
+            }
+        }
+
+        m_assetManager->SaveScene(scene, scenePath);
+    }
+
+    for (auto &child : scene->GetRoot()->GetChildren())
+    {
+        for (auto &child2 : child->GetChildren())
+        {
+            if (auto *mesh = child2->GetComponent<MeshRendererComponent>())
+            {
+                if (!mesh->GetMaterial())
+                {
+                    mesh->SetMaterial(m_materialS);
+                }
+            }
         }
     }
 
@@ -97,7 +128,8 @@ void EditorModule::OnUpdate(float dt)
         }
     }
 
-    m_scene->OnUpdate(dt);
+    if (auto activeScene = HierarchyInterface::GetActiveScene())
+        activeScene->OnUpdate(dt);
 
     EditorCamera::Get().OnUpdate(dt);
 
@@ -128,7 +160,9 @@ void EditorModule::OnShutdown()
         interface->OnShutdown();
     }
     m_Interfaces.clear();
-    m_scene->OnShutdown();
+    
+    HierarchyInterface::SetActiveScene(nullptr);
+    
     m_textureS.reset();
     m_materialS.reset();
     m_defaultPipeline.reset();
@@ -148,11 +182,12 @@ void EditorModule::OnFileDropped(const char *path, float x, float y)
 
 void EditorModule::RenderWorld(VkCommandBuffer cmd)
 {
-    if (!m_scene || !m_scene->GetRoot())
+    std::shared_ptr<Scene> activeScene = HierarchyInterface::GetActiveScene();
+    if (!activeScene || !activeScene->GetRoot())
         return;
 
     std::vector<GameObject *> entities;
-    std::vector<GameObject *> traversalStack = {m_scene->GetRoot()};
+    std::vector<GameObject *> traversalStack = {activeScene->GetRoot()};
 
     while (!traversalStack.empty())
     {

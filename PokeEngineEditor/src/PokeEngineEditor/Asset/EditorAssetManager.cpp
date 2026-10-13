@@ -4,6 +4,7 @@
 #include "Poke/Serializers/TextureSerializer.h"
 #include "Poke/Serializers/ModelSerializer.h"
 #include "Poke/Serializers/MeshSerializer.h"
+#include "Poke/Serializers/SceneSerializer.h"
 #include "Poke/Utils/Json.h"
 #include "Poke/Core/Log.h"
 
@@ -31,6 +32,21 @@ std::shared_ptr<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
 
     const AssetMetaData &metadata = m_assetRegistry.at(handle);
     AssetHandle sourceHandle = metadata.IsSubAsset() ? metadata.parentHandle : handle;
+
+    if (metadata.type == AssetType::Scene)
+    {
+        if (IsAssetLoaded(handle))
+            return m_loadedAssets.at(handle);
+
+        SceneSerializer serializer;
+        std::shared_ptr<Asset> scene = serializer.DeserializeFromLibrary(metadata, metadata.filePath);
+        if (scene)
+        {
+            m_loadedAssets[handle] = scene;
+            return scene;
+        }
+        return nullptr;
+    }
 
     if (!IsAssetHandleValid(sourceHandle))
         return nullptr;
@@ -138,7 +154,7 @@ AssetHandle EditorAssetManager::GetAssetHandle(const std::filesystem::path &file
             return handle;
     }
 
-    return AssetHandle();
+    return AssetHandle(0);
 }
 
 const AssetMetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
@@ -162,13 +178,11 @@ std::vector<AssetHandle> EditorAssetManager::GetModelMeshes(AssetHandle modelHan
             meshes.push_back(handle);
     }
 
-    std::sort(meshes.begin(), meshes.end(), [this](AssetHandle a, AssetHandle b) {
-        return GetMetaData(a).subAssetIndex < GetMetaData(b).subAssetIndex;
-    });
+    std::sort(meshes.begin(), meshes.end(), [this](AssetHandle a, AssetHandle b)
+              { return GetMetaData(a).subAssetIndex < GetMetaData(b).subAssetIndex; });
 
     return meshes;
 }
-
 
 void EditorAssetManager::ScanDirectoryAssets(const std::filesystem::path &directoryPath)
 {
@@ -225,22 +239,37 @@ AssetImportResult EditorAssetManager::LoadAsset(const AssetMetaData &metadata)
 
 AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &filePath)
 {
+    AssetType type = GetAssetTypeFromExtension(filePath.extension());
+    if (type == AssetType::None)
+        return AssetHandle(0);
+
     AssetMetaData metadata;
     metadata.handle = AssetHandle();
     metadata.sourcePath = filePath;
-    metadata.type = GetAssetTypeFromExtension(filePath.extension());
-
-    if (metadata.type == AssetType::None)
-        return AssetHandle();
-
-    metadata.filePath = GetProjectAssetPath(filePath, metadata.type);
+    metadata.type = type;
+    metadata.filePath = GetProjectAssetPath(metadata.sourcePath,type);
     metadata.lastWriteTime = GetFileLastWriteTime(filePath);
 
     m_assetRegistry[metadata.handle] = metadata;
 
-    if (!SerializeAssetFile(metadata))
-        return AssetHandle();
+    if (type == AssetType::Scene)
+    {
+        if (!std::filesystem::exists(filePath))
+        {
+            auto emptyScene = std::make_shared<Scene>(metadata.handle);
+            emptyScene->OnInit();
 
+            SceneSerializer serializer;
+            serializer.SerializeToLibrary(metadata, emptyScene, filePath);
+        }
+    }
+    else
+    {
+        if (!SerializeAssetFile(metadata))
+            return AssetHandle(0);
+    }
+
+    SerializeAssetRegistry();
     POKE_CORE_INFO("[AssetManager] Registered asset [{0}] -> {1}", static_cast<uint64_t>(metadata.handle), metadata.filePath.string());
 
     return metadata.handle;
@@ -249,7 +278,7 @@ AssetHandle EditorAssetManager::RegisterAsset(const std::filesystem::path &fileP
 AssetHandle Poke::EditorAssetManager::RegisterSubAsset(const std::shared_ptr<Asset> &asset, AssetHandle parentHandle, uint32_t subAssetIndex)
 {
     if (!asset || !IsAssetHandleValid(parentHandle))
-        return AssetHandle();
+        return AssetHandle(0);
 
     const AssetMetaData &parentMetadata = m_assetRegistry.at(parentHandle);
 
@@ -350,6 +379,53 @@ bool EditorAssetManager::DeserializeAssetRegistry()
 
     POKE_CORE_INFO("[EditorAssetManager] Deserialized {0} assets from registry", m_assetRegistry.size());
     return true;
+}
+
+void EditorAssetManager::SaveScene(std::shared_ptr<Scene> scene, const std::filesystem::path &filePath)
+{
+    if (!scene)
+        return;
+
+    AssetHandle handle = scene->GetHandle();
+    if (!IsAssetHandleValid(handle))
+        return;
+
+    const AssetMetaData &metadata = m_assetRegistry.at(handle);
+
+    SceneSerializer serializer;
+    serializer.SerializeToLibrary(metadata, scene, filePath);
+}
+
+std::shared_ptr<Scene> EditorAssetManager::LoadScene(const std::filesystem::path &filePath)
+{
+    AssetHandle handle = GetAssetHandle(filePath);
+
+    if (static_cast<uint64_t>(handle) == 0)
+    {
+        POKE_CORE_ERROR("[EditorAssetManager] Failed to register or find scene at {0}", filePath.string());
+        return nullptr;
+    }
+
+    if (!IsAssetHandleValid(handle) || GetAssetType(handle) != AssetType::Scene)
+    {
+        POKE_CORE_ERROR("[EditorAssetNanager] Invalid scene asset: {0}", filePath.string());
+        return nullptr;
+    }
+
+    const AssetMetaData &metadata = GetMetaData(handle);
+    SceneSerializer serializer;
+    std::shared_ptr<Asset> asset = serializer.DeserializeFromLibrary(metadata, filePath);
+    std::shared_ptr<Scene> scene = std::static_pointer_cast<Scene>(asset);
+    if (!scene)
+    {
+        POKE_CORE_ERROR("[EditorAssetManager] Failed to deserialize scene: {0}", filePath.string());
+        return nullptr;
+    }
+
+    m_loadedAssets[handle] = scene;
+
+    POKE_CORE_INFO("[EditorAssetManager] Scene loaded successfully: {0}", filePath.string());
+    return scene;
 }
 
 bool EditorAssetManager::ImportAndSerializeAsset(AssetHandle handle)
@@ -575,6 +651,10 @@ std::filesystem::path EditorAssetManager::GetProjectAssetPath(const std::filesys
         path.replace_extension(".mesh");
         break;
 
+    case AssetType::Scene:
+        path.replace_extension(".scene");
+        break;
+
     default:
         break;
     }
@@ -603,6 +683,10 @@ std::filesystem::path EditorAssetManager::GetBinaryPath(const AssetMetaData &met
     case AssetType::Model:
         directory = "Models";
         extension = ".model";
+        break;
+    case AssetType::Scene:
+        directory = "Scenes";
+        extension = ".scene";
         break;
     default:
         directory = "Others";
@@ -639,6 +723,10 @@ std::string EditorAssetManager::GetAssetExtensionFromType(AssetType type) const
         extension = ".mesh";
         break;
 
+    case AssetType::Scene:
+        extension = ".scene";
+        break;
+
     default:
         extension = "";
         break;
@@ -653,6 +741,8 @@ AssetType EditorAssetManager::GetAssetTypeFromExtension(const std::filesystem::p
         return AssetType::Texture;
     if (extension == ".fbx")
         return AssetType::Model;
+    if (extension == ".scene")
+        return AssetType::Scene;
 
     return AssetType::None;
 }
