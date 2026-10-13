@@ -17,6 +17,8 @@ namespace Poke
     using AssetMap = std::unordered_map<AssetHandle, std::shared_ptr<Asset>>;
     using SerializerMap = std::unordered_map<AssetType, std::unique_ptr<AssetSerializer>>;
 
+    class Scene;
+
     class EditorAssetManager : public AssetManagerBase
     {
     public:
@@ -44,6 +46,9 @@ namespace Poke
 
         bool SerializeAssetRegistry();
         bool DeserializeAssetRegistry();
+
+        void SaveScene(std::shared_ptr<Scene> scene, const std::filesystem::path &filePath);
+        std::shared_ptr<Scene> LoadScene(const std::filesystem::path &filePath);
 
     private:
         bool ImportAndSerializeAsset(AssetHandle handle);

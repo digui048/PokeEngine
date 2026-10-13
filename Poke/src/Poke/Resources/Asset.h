@@ -14,7 +14,8 @@ namespace Poke
         Texture,
         Material,
         Mesh,
-        Model
+        Model,
+        Scene
     };
 
     inline std::string AssetTypeToString(AssetType type)
@@ -27,6 +28,8 @@ namespace Poke
             return "Model";
         case AssetType::Mesh:
             return "Mesh";
+        case AssetType::Scene:
+            return "Scene";
         default:
             return "None";
         }
@@ -40,6 +43,8 @@ namespace Poke
             return AssetType::Model;
         if (typeStr == "Mesh")
             return AssetType::Mesh;
+        if (typeStr == "Scene")
+            return AssetType::Scene;
             
         return AssetType::None;
     }

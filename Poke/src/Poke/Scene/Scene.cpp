@@ -6,6 +6,16 @@
 
 using namespace Poke;
 
+Scene::Scene()
+    : Asset(AssetHandle())
+{
+}
+
+Scene::Scene(AssetHandle handle)
+    : Asset(handle)
+{
+}
+
 void Scene::OnInit()
 {
     m_rootGameObject = std::make_unique<GameObject>("Root");
