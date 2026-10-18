@@ -7,39 +7,61 @@ namespace Poke
 {
     using ResourceHandle = uint32_t;
 
-    ResourceHandle InvalidResource = 0xffffffff;
+    inline constexpr ResourceHandle InvalidResource = 0xffffffff;
 
-    struct BufferHandle {
+    inline bool IsValid(ResourceHandle index)
+    {
+        return index != InvalidResource;
+    }
+
+    struct BufferHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct TextureHandle {
+    struct TextureHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct ShaderHandle {
+    struct ShaderHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct SamplerHandle {
+    struct SamplerHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct DescriptorSetHandle {
+    struct DescriptorSetHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct DescriptorSetLayoutHandle {
+    struct DescriptorSetLayoutHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct PipelineHandle {
+    struct PipelineHandle
+    {
         ResourceHandle index = InvalidResource;
     };
 
-    struct RenderPassHandle {
+    struct RenderPassHandle
+    {
         ResourceHandle index = InvalidResource;
     };
+
+    inline bool IsValid(BufferHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(TextureHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(ShaderHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(SamplerHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(DescriptorSetHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(DescriptorSetLayoutHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(PipelineHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(RenderPassHandle handle) { return IsValid(handle.index); }
 }
 
 #endif

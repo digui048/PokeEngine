@@ -5,19 +5,29 @@
 
 namespace Poke
 {
-    // Resource and GPU
     enum class QueueType
     {
         Graphics,
         Compute,
         Transfer
     };
+
     enum class ShaderStage
     {
         Vertex,
         Fragment,
         Compute
     };
+
+    enum class ShaderStageFlags : uint32_t
+    {
+        None = 0,
+        Vertex = 1 << 0,
+        Fragment = 1 << 1,
+        Compute = 1 << 2,
+        All = Vertex | Fragment | Compute
+    };
+
     enum class TextureType
     {
         Texture1D,
@@ -28,6 +38,7 @@ namespace Poke
         Cube,
         CubeArray
     };
+
     enum class ResourceUsage
     {
         Immutable,
@@ -35,7 +46,6 @@ namespace Poke
         Stream
     };
 
-    // Texture and Image formats
     enum class Format
     {
         Undefined,
@@ -113,12 +123,14 @@ namespace Poke
         TriangleFan,
         PatchList
     };
+
     enum class PolygonMode
     {
         Fill,
         Line,
         Point
     };
+
     enum class CullMode
     {
         None,
@@ -126,13 +138,13 @@ namespace Poke
         Back,
         FrontAndBack
     };
+
     enum class FrontFace
     {
         CounterClockwise,
         Clockwise
     };
 
-    // Depth and stencil
     enum class CompareOp
     {
         Never,
@@ -140,10 +152,11 @@ namespace Poke
         Equal,
         LessOrEqual,
         Greater,
-        NotEqueal,
+        NotEqual,
         GreaterOrEqual,
         Always
     };
+
     enum class StencilOp
     {
         Keep,
@@ -156,7 +169,6 @@ namespace Poke
         DecrementWrap
     };
 
-    // Blending
     enum class BlendFactor
     {
         Zero,
@@ -180,6 +192,7 @@ namespace Poke
 
         SourceAlphaSaturate
     };
+
     enum class BlendOp
     {
         Add,
@@ -189,12 +202,12 @@ namespace Poke
         Max
     };
 
-    // Vertex input
     enum class VertexInputRate
     {
         PerVertex,
         PerInstance
     };
+
     enum class VertexFormat
     {
         Float,
@@ -213,7 +226,6 @@ namespace Poke
         UInt4,
     };
 
-    // Resource states
     enum class ResourceState
     {
         Undefined,
@@ -237,7 +249,6 @@ namespace Poke
         Present
     };
 
-    // Pipeline stages
     enum class PipelineStage
     {
         TopOfPipe,
@@ -259,7 +270,6 @@ namespace Poke
         BottomOfPipe
     };
 
-    // Load and store operations
     enum class LoadOp
     {
         Load,
@@ -271,6 +281,88 @@ namespace Poke
         Store,
         DontCare
     };
+
+    enum class Filter
+    {
+        Nearest,
+        Linear
+    };
+
+    enum class MipmapMode
+    {
+        Nearest,
+        Linear
+    };
+
+    enum class AdressMode
+    {
+        Repeat,
+        MirroredRepeat,
+        ClampToEdge,
+        ClampToBorder
+    };
+
+    enum class DescriptorType
+    {
+        Sampler,
+        CombinedImageSampler,
+        SampledImage,
+        StorageImage,
+        UniformBuffer,
+        StorageBuffer
+    };
+
+    enum class PresentMode
+    {
+        Immediate,
+        VSync,
+        VSyncRelaxed
+    };
+
+    enum class RenderPassType
+    {
+        Geometry,
+        Swapchain,
+        Compute
+    };
+
+    enum class ColorWriteMask : uint32_t
+    {
+        None = 0,
+        Red = 1 << 0,
+        Green = 1 << 1,
+        Blue = 1 << 2,
+        Alpha = 1 << 3,
+        All = Red | Green | Blue | Alpha
+    };
+
+    template <typename T>
+    inline T GpuFlagsOr(T a, T b)
+    {
+        return static_cast<T>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+    }
+
+    template <typename T>
+    inline T GpuFlagsAnd(T a, T b)
+    {
+        return static_cast<T>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+    }
+
+    inline ShaderStageFlags operator|(ShaderStageFlags a, ShaderStageFlags b) { return GpuFlagsOr(a, b); }
+    inline ShaderStageFlags operator&(ShaderStageFlags a, ShaderStageFlags b) { return GpuFlagsAnd(a, b); }
+    inline ShaderStageFlags operator|=(ShaderStageFlags a, ShaderStageFlags b) { a = a | b; return a; }
+
+    inline BufferUsage operator|(BufferUsage a, BufferUsage b) { return GpuFlagsOr(a, b); }
+    inline BufferUsage operator&(BufferUsage a, BufferUsage b) { return GpuFlagsAnd(a, b); }
+    inline BufferUsage operator|=(BufferUsage a, BufferUsage b) { a = a | b; return a; }
+
+    inline TextureUsage operator|(TextureUsage a, TextureUsage b) { return GpuFlagsOr(a, b); }
+    inline TextureUsage operator&(TextureUsage a, TextureUsage b) { return GpuFlagsAnd(a, b); }
+    inline TextureUsage operator|=(TextureUsage a, TextureUsage b) { a = a | b; return a; }
+
+    inline ColorWriteMask operator|(ColorWriteMask a, ColorWriteMask b) { return GpuFlagsOr(a, b); }
+    inline ColorWriteMask operator&(ColorWriteMask a, ColorWriteMask b) { return GpuFlagsAnd(a, b); }
+    inline ColorWriteMask operator|=(ColorWriteMask a, ColorWriteMask b) { a = a | b; return a; }
 }
 
 #endif
