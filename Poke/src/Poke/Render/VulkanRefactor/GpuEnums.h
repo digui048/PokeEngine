@@ -5,364 +5,215 @@
 
 namespace Poke
 {
-    enum class QueueType
+    namespace ColorWriteEnabled
     {
-        Graphics,
-        Compute,
-        Transfer
-    };
+        enum Enum {
+            Red, Green, Blue, Alpha, All, Count
+        };
 
-    enum class ShaderStage
-    {
-        Vertex,
-        Fragment,
-        Compute
-    };
-
-    enum class ShaderStageFlags : uint32_t
-    {
-        None = 0,
-        Vertex = 1 << 0,
-        Fragment = 1 << 1,
-        Compute = 1 << 2,
-        All = Vertex | Fragment | Compute
-    };
-
-    enum class TextureType
-    {
-        Texture1D,
-        Texture2D,
-        Texture3D,
-        Texture1DArray,
-        Texture2DArray,
-        Cube,
-        CubeArray
-    };
-
-    enum class ResourceUsage
-    {
-        Immutable,
-        Dynamic,
-        Stream
-    };
-
-    enum class Format
-    {
-        Undefined,
-
-        // Color
-        R8_UNORM,
-        R8_SNORM,
-        R8_UINT,
-        R8_SINT,
-
-        RG8_UNORM,
-        RG8_SNORM,
-        RG8_UINT,
-        RG8_SINT,
-
-        RGBA8_UNORM,
-        RGBA8_SRGB,
-        RGBA8_UINT,
-        RGBA8_SINT,
-
-        BGRA8_UNORM,
-        BGRA8_SRGB,
-
-        R16_FLOAT,
-        RG16_FLOAT,
-        RGBA16_FLOAT,
-
-        R32_FLOAT,
-        RG32_FLOAT,
-        RGB32_FLOAT,
-        RGBA32_FLOAT,
-
-        // Depth
-        D16_UNORM,
-        D32_FLOAT,
-
-        // Depth and stencil
-        D24_UNORM_S8_UINT,
-        D32_FLOAT_S8_UINT
-    };
-
-    // Buffer types and usages
-    enum class BufferUsage : uint32_t
-    {
-        None = 0,
-        Vertex = 1 << 0,
-        Index = 1 << 1,
-        Uniform = 1 << 2,
-        Storage = 1 << 3,
-        Indirect = 1 << 4,
-        TransferSource = 1 << 5,
-        TransferDest = 1 << 6,
-    };
-
-    // Texture usage
-    enum class TextureUsage : uint32_t
-    {
-        None = 0,
-        Sampled = 1 << 0,
-        Storage = 1 << 1,
-        RenderTarget = 1 << 2,
-        DepthStencil = 1 << 3,
-        TransferSource = 1 << 4,
-        TransferDest = 1 << 5,
-    };
-
-    // Pipeline
-    enum class PrimitiveTopology
-    {
-        PointList,
-        LineList,
-        LineStrip,
-        TriangleList,
-        TriangleStrip,
-        TriangleFan,
-        PatchList
-    };
-
-    enum class PolygonMode
-    {
-        Fill,
-        Line,
-        Point
-    };
-
-    enum class CullMode
-    {
-        None,
-        Front,
-        Back,
-        FrontAndBack
-    };
-
-    enum class FrontFace
-    {
-        CounterClockwise,
-        Clockwise
-    };
-
-    enum class CompareOp
-    {
-        Never,
-        Less,
-        Equal,
-        LessOrEqual,
-        Greater,
-        NotEqual,
-        GreaterOrEqual,
-        Always
-    };
-
-    enum class StencilOp
-    {
-        Keep,
-        Zero,
-        Replace,
-        IncrementClamp,
-        DecrementClamp,
-        Invert,
-        IncrementWrap,
-        DecrementWrap
-    };
-
-    enum class BlendFactor
-    {
-        Zero,
-        One,
-
-        SourceColor,
-        OneMinusSourceColor,
-        DestinationColor,
-        OneMinusDestinationColor,
-
-        SourceAlpha,
-        OneMinusSourceAlpha,
-        DestinationAlpha,
-        OneMinusDestinationAlpha,
-
-        ConstantColor,
-        OneMinusConstantColor,
-
-        ConstantAlpha,
-        OneMinusConstantAlpha,
-
-        SourceAlphaSaturate
-    };
-
-    enum class BlendOp
-    {
-        Add,
-        Subtract,
-        ReverseSubtract,
-        Min,
-        Max
-    };
-
-    enum class VertexInputRate
-    {
-        PerVertex,
-        PerInstance
-    };
-
-    enum class VertexFormat
-    {
-        Float,
-        Float2,
-        Float3,
-        Float4,
-
-        Int,
-        Int2,
-        Int3,
-        Int4,
-
-        UInt,
-        UInt2,
-        UInt3,
-        UInt4,
-    };
-
-    enum class ResourceState
-    {
-        Undefined,
-
-        CopySource,
-        CopyDestination,
-
-        VertexBuffer,
-        IndexBuffer,
-
-        ConstantBuffer,
-
-        ShaderRead,
-        ShaderWrite,
-
-        RenderTarget,
-
-        DepthWrite,
-        DepthRead,
-
-        Present
-    };
-
-    enum class PipelineStage
-    {
-        TopOfPipe,
-
-        DrawIndirect,
-
-        VertexInput,
-        VertexShader,
-
-        FragmentShader,
-
-        ComputeShader,
-
-        ColorAttachment,
-        DepthStencil,
-
-        Transfer,
-
-        BottomOfPipe
-    };
-
-    enum class LoadOp
-    {
-        Load,
-        Clear,
-        DontCare
-    };
-    enum class StoreOp
-    {
-        Store,
-        DontCare
-    };
-
-    enum class Filter
-    {
-        Nearest,
-        Linear
-    };
-
-    enum class MipmapMode
-    {
-        Nearest,
-        Linear
-    };
-
-    enum class AdressMode
-    {
-        Repeat,
-        MirroredRepeat,
-        ClampToEdge,
-        ClampToBorder
-    };
-
-    enum class DescriptorType
-    {
-        Sampler,
-        CombinedImageSampler,
-        SampledImage,
-        StorageImage,
-        UniformBuffer,
-        StorageBuffer
-    };
-
-    enum class PresentMode
-    {
-        Immediate,
-        VSync,
-        VSyncRelaxed
-    };
-
-    enum class RenderPassType
-    {
-        Geometry,
-        Swapchain,
-        Compute
-    };
-
-    enum class ColorWriteMask : uint32_t
-    {
-        None = 0,
-        Red = 1 << 0,
-        Green = 1 << 1,
-        Blue = 1 << 2,
-        Alpha = 1 << 3,
-        All = Red | Green | Blue | Alpha
-    };
-
-    template <typename T>
-    inline T GpuFlagsOr(T a, T b)
-    {
-        return static_cast<T>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        enum Mask {
+            RedMask = 1 << 0, GreenMask = 1 << 1, BlueMask = 1 << 2, AlphaMask = 1 << 3, AllMask = RedMask | GreenMask | BlueMask | AlphaMask
+        };
     }
 
-    template <typename T>
-    inline T GpuFlagsAnd(T a, T b)
+    namespace CullMode
     {
-        return static_cast<T>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+        enum Enum {
+            None, Front, Back, Count
+        };
+
+        enum Mask {
+            NoneMask = 1 << 0, FrontMask = 1 << 1, BackMask = 1 << 2, CountMask = 1 << 3
+        };
     }
 
-    inline ShaderStageFlags operator|(ShaderStageFlags a, ShaderStageFlags b) { return GpuFlagsOr(a, b); }
-    inline ShaderStageFlags operator&(ShaderStageFlags a, ShaderStageFlags b) { return GpuFlagsAnd(a, b); }
-    inline ShaderStageFlags operator|=(ShaderStageFlags a, ShaderStageFlags b) { a = a | b; return a; }
+    namespace FillMode
+    {
+        enum Enum {
+            Wireframe, Solid, Point, Count
+        };
 
-    inline BufferUsage operator|(BufferUsage a, BufferUsage b) { return GpuFlagsOr(a, b); }
-    inline BufferUsage operator&(BufferUsage a, BufferUsage b) { return GpuFlagsAnd(a, b); }
-    inline BufferUsage operator|=(BufferUsage a, BufferUsage b) { a = a | b; return a; }
+        enum Mask {
+            WireframeMask = 1 << 0, SolidMask = 1 << 1, PointMask = 1 << 2, CountMask = 1 << 3
+        };
+    }
 
-    inline TextureUsage operator|(TextureUsage a, TextureUsage b) { return GpuFlagsOr(a, b); }
-    inline TextureUsage operator&(TextureUsage a, TextureUsage b) { return GpuFlagsAnd(a, b); }
-    inline TextureUsage operator|=(TextureUsage a, TextureUsage b) { a = a | b; return a; }
+    namespace FrontClockWise
+    {
+        enum Enum {
+            True, False, Count
+        };
 
-    inline ColorWriteMask operator|(ColorWriteMask a, ColorWriteMask b) { return GpuFlagsOr(a, b); }
-    inline ColorWriteMask operator&(ColorWriteMask a, ColorWriteMask b) { return GpuFlagsAnd(a, b); }
-    inline ColorWriteMask operator|=(ColorWriteMask a, ColorWriteMask b) { a = a | b; return a; }
+        enum Mask {
+            TrueMask = 1 << 0, FalseMask = 1 << 1, CountMask = 1 << 2
+        };
+    }
+
+    namespace FrontClockWise
+    {
+        enum Enum {
+            True, False, Count
+        };
+
+        enum Mask {
+            TrueMask = 1 << 0, FalseMask = 1 << 1, CountMask = 1 << 2
+        };
+    }
+
+    namespace StencilOperation
+    {
+        enum Enum {
+            Keep, Zero, Replace, IncrSat, DecrSat, Invert, Incr, Decr, Count
+        };
+
+        enum Mask {
+            KeepMask = 1 << 0, ZeroMask = 1 << 1, ReplaceMask = 1 << 2, IncrSatMask = 1 << 3, DecrSatMask = 1 << 4, InvertMask = 1 << 5, IncrMask = 1 << 6, DecrMask = 1 << 7, CountMask = 1 << 8
+        };
+    }
+
+    namespace TopologyType
+    {
+        enum Enum {
+            Unknown, Point, Line, Triangle, Patch, Count
+        };
+
+        enum Mask {
+            UnknownMask = 1 << 0, PointMask = 1 << 1, LineMask = 1 << 2, TriangleMask = 1 << 3, PatchMask = 1 << 4, CountMask = 1 << 5
+        };
+    }
+
+    namespace ResourceUsageType
+    {
+        enum Enum {
+            Immutable, Dynamic, Stream, Count
+        };
+
+        enum Mask {
+            ImmutableMask = 1 << 0, DynamicMask = 1 << 1, StreamMask = 1 << 2, CountMask = 1 << 3
+        };
+    }
+
+    namespace IndexType
+    {
+        enum Enum {
+            Uint16, Uint32, Count
+        };
+
+        enum Mask {
+            Uint16Mask = 1 << 0, Uint32Mask = 1 << 1, CountMask = 1 << 2
+        };
+    }
+
+    namespace TextureType
+    {
+        enum Enum {
+            Texture1D, Texture2D, Texture3D, Texture1DArray, Texture2DArray, TextureCubeArray, Count
+        };
+
+        enum Mask {
+            Texture1DMask = 1 << 0, Texture2DMask = 1 << 1, Texture3DMask = 1 << 2, Texture1DArrayMask = 1 << 3, Texture2DArrayMask = 1 << 4, TextureCubeArrayMask = 1 << 5, CountMask = 1 << 6
+        };
+    }
+
+    namespace VertexComponentFormat
+    {
+        enum Enum {
+            Float, Float2, Float3, Float4, Mat4, Byte, Byte4N, UByte, UByte4N, Short2, Short2N, Short4, Short4N, Uint, Uint2, Uint3, Uint4, Count
+        };
+    }
+
+    namespace VertexInputRate
+    {
+        enum Enum {
+            PerVertex, PerInstance, Count
+        };
+
+        enum Mask {
+            PerVertexMask = 1 << 0, PerInstanceMask = 1 << 1, CountMask = 1 << 2
+        };
+    }
+
+    namespace LogicOperation 
+    {
+        enum Enum {
+            Clear, Set, Copy, CopyInverted, Noop, Invert, And, Nand, Or, Nor, Xor, Equiv, AndReverse, AndInverted, OrReverse, OrInverted, Count
+        };
+
+        enum Mask {
+            ClearMask = 1 << 0, SetMask = 1 << 1, CopyMask = 1 << 2, CopyInvertedMask = 1 << 3, NoopMask = 1 << 4, InvertMask = 1 << 5, AndMask = 1 << 6, NandMask = 1 << 7, OrMask = 1 << 8, NorMask = 1 << 9, XorMask = 1 << 10, EquivMask = 1 << 11, AndReverseMask = 1 << 12, AndInvertedMask = 1 << 13, OrReverseMask = 1 << 14, OrInvertedMask = 1 << 15, CountMask = 1 << 16
+        };
+    }
+
+    namespace QueueType
+    {
+        enum Enum {
+            Graphics, Compute, CopyTransfer, Count
+        };
+
+        enum Mask {
+            GraphicsMask = 1 << 0, ComputeMask = 1 << 1, CopyTransferMask = 1 << 2, CountMask = 1 << 3
+        };
+    }
+
+    namespace CommandType
+    {
+        enum Enum {
+            BindPipeline, BindResourceTable, BindVertexBuffer, BindIndexBuffer, BindResourceSet, Draw, DrawIndexed, DrawInstanced, DrawIndexedInstanced, Dispatch, CopyResource, SetScissor, SetViewport, Clear, ClearDepth, ClearStencil, BeginPass, EndPass, Count
+        };
+    }
+
+    enum DeviceExtensions {
+        DeviceExtensions_DebugCallback = 1 << 0,
+    };
+
+    namespace TextureFlags {
+        enum Enum {
+            Default, RenderTarget, Compute, Count
+        };
+
+        enum Mask {
+            DefaultMask = 1 << 0, RenderTargetMask = 1 << 1, ComputeMask = 1 << 2
+        };
+    }
+
+    namespace PipelineStage
+    {
+        enum Enum {
+            DrawIndirect, VertexInput, VertexShader, FragmentShader, RenderTarget, ComputeShader, Transfer
+        };
+
+        enum Mask {
+            DrawIndirectMask = 1 << 0, VertexInputMask = 1 << 1, VertexShaderMask = 1 << 2, FragmentShaderMask = 1 << 3, RenderTargetMask = 1 << 4, ComputeShaderMask = 1 << 5, TransferMask = 1 << 6
+        };
+    }
+
+    namespace RenderPassType
+    {
+        enum Enum {
+            Geometry, Swapchain, Compute
+        };
+    }
+
+    namespace ResourceDeletionType
+    {
+        enum Enum {
+            Buffer, Texture, Pipeline, Sampler, DescriptorSetLayout, DescriptorSet, RenderPass, ShaderState, Count
+        };
+    }
+
+    namespace PresentMode
+    {
+        enum Enum {
+            Immediate, VSync, VSyncFast, VSyncRelaxed, Count
+        };
+    }
+
+    namespace RenderPassOperation 
+    {
+        enum Enum {
+            DontCare, Load, Clear, Count
+        };
+    }
 }
 
 #endif

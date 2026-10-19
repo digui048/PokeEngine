@@ -54,6 +54,11 @@ namespace Poke
         ResourceHandle index = InvalidResource;
     };
 
+    struct ShaderStateHandle
+    {
+        ResourceHandle index = InvalidResource;
+    };
+
     inline bool IsValid(BufferHandle handle) { return IsValid(handle.index); }
     inline bool IsValid(TextureHandle handle) { return IsValid(handle.index); }
     inline bool IsValid(ShaderHandle handle) { return IsValid(handle.index); }
@@ -62,6 +67,7 @@ namespace Poke
     inline bool IsValid(DescriptorSetLayoutHandle handle) { return IsValid(handle.index); }
     inline bool IsValid(PipelineHandle handle) { return IsValid(handle.index); }
     inline bool IsValid(RenderPassHandle handle) { return IsValid(handle.index); }
+    inline bool IsValid(ShaderStateHandle handle) { return IsValid(handle.index); }
 }
 
 #endif
