@@ -8,6 +8,16 @@ namespace Poke
     using ResourceHandle = uint32_t;
 
     inline constexpr ResourceHandle InvalidResource = 0xffffffff;
+    static constexpr ResourceHandle k_invalidIndex = InvalidResource;
+
+    static BufferHandle k_invalidBuffer{k_invalidIndex};
+    static TextureHandle k_invalidTexture{k_invalidIndex};
+    static ShaderStateHandle k_invalidShader{k_invalidIndex};
+    static SamplerHandle k_invalidSampler{k_invalidIndex};
+    static DescriptorSetLayoutHandle k_invalidLayout{k_invalidIndex};
+    static DescriptorSetHandle k_invalidSet{k_invalidIndex};
+    static PipelineHandle k_invalidPipeline{k_invalidIndex};
+    static RenderPassHandle k_invalidPass{k_invalidIndex};
 
     inline bool IsValid(ResourceHandle index)
     {

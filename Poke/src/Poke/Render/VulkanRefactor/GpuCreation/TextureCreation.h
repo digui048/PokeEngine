@@ -22,11 +22,11 @@ namespace Poke
 
         const char *name = nullptr;
 
-        TextureCreation SetSize(uint16_t width, uint16_t height, uint16_t depth);
-        TextureCreation SetFlags(uint8_t mipmaps, uint8_t flags);
-        TextureCreation SetFormatType(VkFormat format, TextureType::Enum type);
-        TextureCreation SetData(void *data);
-        TextureCreation SetName(const char *name);
+        TextureCreation& SetSize(uint16_t width, uint16_t height, uint16_t depth);
+        TextureCreation& SetFlags(uint8_t mipmaps, uint8_t flags);
+        TextureCreation& SetFormatType(VkFormat format, TextureType::Enum type);
+        TextureCreation& SetData(void *data);
+        TextureCreation& SetName(const char *name);
     };
 }
 

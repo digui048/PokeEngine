@@ -27,6 +27,7 @@ namespace Poke
         ShaderStateCreation &Reset();
         ShaderStateCreation &AddStage(const char *code, uint32_t codeSize, VkShaderStageFlagBits type);
         ShaderStateCreation &SetSPVInput(bool value);
+        ShaderStateCreation &SetName(const char *name);
     };
 }
 
