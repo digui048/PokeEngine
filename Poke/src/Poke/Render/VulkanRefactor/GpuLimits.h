@@ -11,6 +11,7 @@ namespace Poke
     constexpr uint32_t kMaxDescriptorPerSet = 16;
     constexpr uint32_t kMaxVertexStreams = 16;
     constexpr uint32_t kMaxVertexAttributes = 16;
+    constexpr uint32_t kMaxSwapchainImages = 3;
 }
 
 #endif

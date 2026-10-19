@@ -16,7 +16,7 @@ namespace Poke
         VkBuffer buffer;
         VmaAllocation allocation;
         VkDeviceMemory memory;
-        VkDeviceSize size = 0;
+        VkDeviceSize deviceSize = 0;
 
         VkBufferUsageFlags typeFlags = 0;
         ResourceUsageType::Enum usage = ResourceUsageType::Immutable;
