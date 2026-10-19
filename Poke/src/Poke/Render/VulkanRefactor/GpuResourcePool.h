@@ -5,7 +5,7 @@
 
 namespace Poke
 {
-    struct GpuResourcePool
+    struct ResourcePool
     {
         void Init(uint32_t poolSixe, uint32_t resourceSize);
         void Shutdown();

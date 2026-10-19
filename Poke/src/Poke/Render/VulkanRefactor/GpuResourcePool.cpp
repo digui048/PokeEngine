@@ -7,7 +7,7 @@ namespace Poke
     static const uint32_t InvalidResource = 0xffffffff;
 }
 
-void GpuResourcePool::Init(uint32_t poolSize, uint32_t resourceSize)
+void ResourcePool::Init(uint32_t poolSize, uint32_t resourceSize)
 {
     m_poolSize = poolSize;
     m_resourceSize = resourceSize;
@@ -24,7 +24,7 @@ void GpuResourcePool::Init(uint32_t poolSize, uint32_t resourceSize)
     m_usedIndices = 0;
 }
 
-void GpuResourcePool::Shutdown()
+void ResourcePool::Shutdown()
 {
     delete[] m_memory;
     m_memory = nullptr;
@@ -35,7 +35,7 @@ void GpuResourcePool::Shutdown()
     m_usedIndices = 0;
 }
 
-uint32_t GpuResourcePool::ObtainResource()
+uint32_t ResourcePool::ObtainResource()
 {
     if (m_freeIndicesHead < m_poolSize)
     {
@@ -47,13 +47,13 @@ uint32_t GpuResourcePool::ObtainResource()
     return -1;
 }
 
-void GpuResourcePool::ReleaseResource(uint32_t index)
+void ResourcePool::ReleaseResource(uint32_t index)
 {
     m_freeIndices[--m_freeIndicesHead] = index;
     --m_usedIndices;
 }
 
-void GpuResourcePool::FreeAllResources()
+void ResourcePool::FreeAllResources()
 {
     m_freeIndicesHead = 0;
     m_usedIndices = 0;
@@ -64,14 +64,14 @@ void GpuResourcePool::FreeAllResources()
     }
 }
 
-void *GpuResourcePool::AccessResource(uint32_t index)
+void *ResourcePool::AccessResource(uint32_t index)
 {
     if (index != InvalidResource)
         return &m_memory[index * m_resourceSize];
     return nullptr;
 }
 
-const void *GpuResourcePool::AccessResource(uint32_t index) const
+const void *ResourcePool::AccessResource(uint32_t index) const
 {
     if (index != InvalidResource)
         return &m_memory[index * m_resourceSize];

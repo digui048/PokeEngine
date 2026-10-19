@@ -17,6 +17,11 @@ namespace Poke
     constexpr uint32_t kMaxVertexAttributes = 16;
     constexpr uint32_t kMaxSwapchainImages = 3;
 
+    struct ResourceData
+    {
+        void *data = nullptr;
+    };
+
     struct Rect2DInt
     {
         int16_t x = 0;
@@ -36,8 +41,8 @@ namespace Poke
     {
         uint32_t viewportCount = 0;
         uint32_t scissorCount = 0;
-        Viewport viewports[kMaxColorAttachments]{};
-        Rect2DInt scissors[kMaxColorAttachments]{};
+        Viewport *viewports = nullptr;
+        Rect2DInt *scissors = nullptr;
     };
 
     struct StencilOpState
@@ -314,7 +319,7 @@ namespace Poke
         uint16_t width = 0;
         uint16_t height = 0;
         RenderPassType type = RenderPassType::Geometry;
-        const char * name = nullptr;
+        const char *name = nullptr;
     };
 }
 
