@@ -1,11 +1,9 @@
 #ifndef PIPELINE_CREATION_H
 #define PIPELINE_CREATION_H
 
-#include "../GpuEnums.h"
-#include "../GpuHandles.h"
-#include "../GpuLimits.h"
-#include "../GpuPipelineTypes.h"
-#include "../GpuRenderPassTypes.h"
+#include "../Core/GpuHandles.h"
+#include "../Core/GpuLimits.h"
+#include "../Core/GpuResources.h"
 
 #include "ShaderCreation.h"
 

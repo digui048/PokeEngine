@@ -1,7 +1,7 @@
 #ifndef SHADER_CREATION_H
 #define SHADER_CREATION_H
 
-#include "../GpuLimits.h"
+#include "../Core/GpuLimits.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

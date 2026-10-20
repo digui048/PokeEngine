@@ -1,9 +1,8 @@
 #ifndef DESCRIPTOR_SET_RESOURCE_H
 #define DESCRIPTOR_SET_RESOURCE_H
 
-#include "../GpuEnums.h"
-#include "../GpuHandles.h"
-#include "../GpuLimits.h"
+#include "../Core/GpuHandles.h"
+#include "../Core/GpuLimits.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

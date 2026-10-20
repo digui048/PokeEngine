@@ -1,7 +1,7 @@
 #ifndef BUFFER_CREATION_H
 #define BUFFER_CREATION_H
 
-#include "../GpuEnums.h"
+#include "../Core/GpuEnums.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

@@ -1,9 +1,9 @@
 #ifndef RENDER_PASS_CREATION_H
 #define RENDER_PASS_CREATION_H
 
-#include "../GpuEnums.h"
-#include "../GpuHandles.h"
-#include "../GpuLimits.h"
+#include "../Core/GpuEnums.h"
+#include "../Core/GpuHandles.h"
+#include "../Core/GpuLimits.h"
 
 #include <cstdint>
 

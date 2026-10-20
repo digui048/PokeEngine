@@ -1,8 +1,8 @@
-#ifndef GPU_PIPELINE_TYPES_H
-#define GPU_PIPELINE_TYPES_H
+#ifndef GPU_RESOURCES_H
+#define GPU_RESOURCES_H
 
-#include "GpuEnums.h"
-#include "GpuLimits.h"
+#include "../Core/GpuEnums.h"
+#include "../Core/GpuLimits.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>
@@ -133,6 +133,22 @@ namespace Poke
         VertexInputCreation &Reset();
         VertexInputCreation &AddVertexStream(const VertexStream &stream);
         VertexInputCreation &AddVertexAttribute(const VertexAttribute &attribute);
+    };
+
+    struct RenderPassOutput
+    {
+        VkFormat colorFormats[kMaxImageOutputs];
+        VkFormat depthStencilFormat;
+        uint32_t colorFormatCount;
+
+        RenderPassOperation::Enum colorOperation = RenderPassOperation::DontCare;
+        RenderPassOperation::Enum depthOperation = RenderPassOperation::DontCare;
+        RenderPassOperation::Enum stencilOperation = RenderPassOperation::DontCare;
+
+        RenderPassOutput &Reset();
+        RenderPassOutput &SetColor(VkFormat format);
+        RenderPassOutput &SetDepthStencil(VkFormat format);
+        RenderPassOutput &SetOperations(RenderPassOperation::Enum operation, RenderPassOperation::Enum depthOperation, RenderPassOperation::Enum stencilOperation);
     };
 }
 

@@ -1,8 +1,8 @@
 #ifndef TEXTURE_RESOURCE_H
 #define TEXTURE_RESOURCE_H
 
-#include "../GpuEnums.h"
-#include "../GpuHandles.h"
+#include "../Core/GpuEnums.h"
+#include "../Core/GpuHandles.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

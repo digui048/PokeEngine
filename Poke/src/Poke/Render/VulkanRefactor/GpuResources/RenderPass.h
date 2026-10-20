@@ -1,10 +1,10 @@
 #ifndef RENDER_PASS_RESOURCE_H
 #define RENDER_PASS_RESOURCE_H
 
-#include "../GpuEnums.h"
-#include "../GpuHandles.h"
-#include "../GpuLimits.h"
-#include "../GpuRenderPassTypes.h"
+#include "../Core/GpuEnums.h"
+#include "../Core/GpuHandles.h"
+#include "../Core/GpuLimits.h"
+#include "../Core/GpuResources.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

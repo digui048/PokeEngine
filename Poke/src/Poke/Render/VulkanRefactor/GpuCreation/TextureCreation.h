@@ -1,7 +1,7 @@
 #ifndef TEXTURE_CREATION_H
 #define TEXTURE_CREATION_H
 
-#include "../GpuEnums.h"
+#include "../Core/GpuEnums.h"
 
 #include <vulkan/vulkan.h>
 #include <cstdint>

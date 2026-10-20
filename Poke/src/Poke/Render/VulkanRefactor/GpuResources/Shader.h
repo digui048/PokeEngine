@@ -1,8 +1,7 @@
 #ifndef SHADER_RESOURCE_H
 #define SHADER_RESOURCE_H
 
-#include "../GpuLimits.h"
-#include "../GpuHandles.h"
+#include "../Core/GpuLimits.h"
 
 #include <vulkan/vulkan.h>
 
