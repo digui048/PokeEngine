@@ -3,21 +3,21 @@
 
 #include "GpuResourcePool.h"
 
-#include "GpuCreation/BufferCreation.h"
-#include "GpuCreation/TextureCreation.h"
-#include "GpuCreation/SamplerCreation.h"
-#include "GpuCreation/ShaderCreation.h"
-#include "GpuCreation/DescriptorSetCreation.h"
-#include "GpuCreation/RenderPassCreation.h"
-#include "GpuCreation/PipelineCreation.h"
+#include "../GpuCreation/BufferCreation.h"
+#include "../GpuCreation/TextureCreation.h"
+#include "../GpuCreation/SamplerCreation.h"
+#include "../GpuCreation/ShaderCreation.h"
+#include "../GpuCreation/DescriptorSetCreation.h"
+#include "../GpuCreation/RenderPassCreation.h"
+#include "../GpuCreation/PipelineCreation.h"
 
-#include "GpuResources/Buffer.h"
-#include "GpuResources/Texture.h"
-#include "GpuResources/Sampler.h"
-#include "GpuResources/Shader.h"
-#include "GpuResources/DescriptorSet.h"
-#include "GpuResources/Pipeline.h"
-#include "GpuResources/RenderPass.h"
+#include "../GpuResources/Buffer.h"
+#include "../GpuResources/Texture.h"
+#include "../GpuResources/Sampler.h"
+#include "../GpuResources/Shader.h"
+#include "../GpuResources/DescriptorSet.h"
+#include "../GpuResources/Pipeline.h"
+#include "../GpuResources/RenderPass.h"
 
 #include <vector>
 
@@ -70,10 +70,8 @@ namespace Poke
     class GpuDevice
     {
     public:
-        static GpuDevice *GetInstance();
-
         GpuDevice() = default;
-        ~GpuDevice();
+        ~GpuDevice() = default;
 
         GpuDevice(const GpuDevice &) = delete;
         GpuDevice &operator=(const GpuDevice &) = delete;
@@ -162,7 +160,6 @@ namespace Poke
         // Vulkan access
         VkDevice GetVulkanDevice() const { return m_vulkanDevice; };
         VkPhysicalDevice GetVulkanPhysicalDevice() const { return m_vulkanPhysicalDevice; };
-        VkDevice GetVulkanDevice() const { return m_vulkanDevice; };
         VkQueue GetVulkanQueue() const { return m_vulkanQueue; };
         uint32_t GetVulkanQueueFamily() const { return m_vulkanQueueFamily; };
 
@@ -182,7 +179,7 @@ namespace Poke
         void DestroyPipelineImmediate(uint32_t index);
         void DestroyRenderPassImmediate(uint32_t index);
 
-        // Vulkan initialization
+        // Vulkan helpers
         bool FindQueueFamily(VkPhysicalDevice device);
         void CreateInstance();
         void CreateSurface();
@@ -277,8 +274,10 @@ namespace Poke
         VkFence m_vulkanCommandBufferExecutedFence[kMaxFramesInFlight];
 
         // Validation layers
+        VkAllocationCallbacks* m_vulkanAllocationCallbacks;
         VkDebugUtilsMessengerEXT m_vulkanDebugMessenger;
-        bool m_debugUtilsExtensionPresent = false;
+        VkDebugReportCallbackEXT m_vulkanDebugReportCallback;
+        bool m_debugUtilsExtensionPresent;
     };
 }
 
