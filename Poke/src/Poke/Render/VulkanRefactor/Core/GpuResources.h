@@ -2,6 +2,7 @@
 #define GPU_RESOURCES_H
 
 #include "../Core/GpuEnums.h"
+#include "../Core/GpuHandles.h"
 #include "../Core/GpuLimits.h"
 
 #include <vulkan/vulkan.h>
@@ -149,6 +150,13 @@ namespace Poke
         RenderPassOutput &SetColor(VkFormat format);
         RenderPassOutput &SetDepthStencil(VkFormat format);
         RenderPassOutput &SetOperations(RenderPassOperation::Enum operation, RenderPassOperation::Enum depthOperation, RenderPassOperation::Enum stencilOperation);
+    };
+
+    struct ResourceUpdate
+    {
+        ResourceDeletionType::Enum type;
+        ResourceHandle handle;
+        uint32_t currentFrame;
     };
 }
 

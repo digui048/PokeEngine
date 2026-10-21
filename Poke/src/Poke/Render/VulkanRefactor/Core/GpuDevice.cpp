@@ -2,6 +2,8 @@
 #include "Poke/Core/Log.h"
 #include "Poke/Core/Assert.h"
 
+#include "../Command/CommandBufferRing.h"
+
 #include <SDL3/SDL_vulkan.h>
 
 using namespace Poke;
@@ -15,8 +17,20 @@ PFN_vkSetDebugUtilsObjectNameEXT pfnSetDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT pfnCmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT pfnCmdEndDebugUtilsLabelEXT;
 
+static std::unordered_map<uint64_t, VkRenderPass> s_renderPassCache;
+static CommandBufferRing s_commandBufferRing;
+
 static size_t s_uboAlignment = 256;
 static size_t s_ssboAlignment = 256;
+
+static bool IsValidationsEnabled()
+{
+#ifdef NDEBUG
+    return false
+#else
+    return true;
+#endif
+}
 
 static VkBool32 debugUtilsCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT *callbackData, void *userData)
 {
@@ -73,7 +87,8 @@ void GpuDevice::Init(const DeviceCreation &creation)
     VkResult result;
 
     VkApplicationInfo applicationInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, "Poke Graphics Device", 1, "PokeEngine", 1, VK_MAKE_VERSION(1, 2, 0)};
-    VkInstanceCreateInfo createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions};
+    VkInstanceCreateInfo createInfo = IsValidationsEnabled() ? createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions}
+                                                             : createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
     const VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = createDebugUtilsMessengerInfo();
     createInfo.pNext = &debugCreateInfo;
     result = vkCreateInstance(&createInfo, m_vulkanAllocationCallbacks, &m_vulkanInstance);
@@ -189,4 +204,228 @@ void GpuDevice::Init(const DeviceCreation &creation)
     }
 
     vkGetDeviceQueue(m_vulkanDevice, m_vulkanQueueFamily, 0, &m_vulkanQueue);
+
+    int windowW, windowH;
+    SDL_GetWindowSize(window, &windowW, &windowH);
+
+    const VkFormat surfaceImageFormats[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
+    const VkColorSpaceKHR surfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+
+    uint32_t supportedCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_vulkanPhysicalDevice, m_vulkanWindowSurface, &supportedCount, NULL);
+    std::vector<VkSurfaceFormatKHR> supportedFormats(supportedCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_vulkanPhysicalDevice, m_vulkanWindowSurface, &supportedCount, supportedFormats.data());
+
+    m_swapchainOutput.Reset();
+
+    bool formatFound = false;
+    const uint32_t surfaceFormatCount = sizeof(surfaceImageFormats) / sizeof((surfaceImageFormats)[0]);
+    for (int i = 0; i < surfaceFormatCount; ++i)
+    {
+        for (uint32_t j = 0; j < supportedCount; ++j)
+        {
+            if (supportedFormats[j].format == surfaceImageFormats[i] && supportedFormats[j].colorSpace == surfaceColorSpace)
+            {
+                m_vulkanSurfaceFormat = supportedFormats[j];
+                formatFound = true;
+                break;
+            }
+        }
+
+        if (formatFound)
+            break;
+    }
+
+    if (!formatFound)
+    {
+        m_vulkanSurfaceFormat = supportedFormats[0];
+        POKE_ASSERT(false, "Failed to find supported formats");
+    }
+
+    m_swapchainOutput.SetColor(m_vulkanSurfaceFormat.format);
+    SetPresentMode(m_presentMode);
+
+    CreateSwapchain();
+
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = m_vulkanPhysicalDevice;
+    allocatorInfo.device = m_vulkanDevice;
+    allocatorInfo.instance = m_vulkanInstance;
+
+    result = vmaCreateAllocator(&allocatorInfo, &m_vmaAllocator);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create VMA allocator");
+
+    static const uint32_t k_globalPoolElements = 128;
+    VkDescriptorPoolSize poolSizes[] =
+        {
+            {VK_DESCRIPTOR_TYPE_SAMPLER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, k_globalPoolElements},
+            {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, k_globalPoolElements}};
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = k_globalPoolElements * (sizeof(poolSizes) / sizeof((poolSizes)[0]));
+    poolInfo.poolSizeCount = static_cast<uint32_t>(sizeof(poolSizes) / sizeof((poolSizes)[0]));
+    poolInfo.pPoolSizes = poolSizes;
+    result = vkCreateDescriptorPool(m_vulkanDevice, &poolInfo, m_vulkanAllocationCallbacks, &m_vulkanDescriptorPool);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create descriptor pool");
+
+    m_buffers.Init(4096, sizeof(Buffer));
+    m_textures.Init(512, sizeof(Texture));
+    m_renderPasses.Init(256, sizeof(RenderPass));
+    m_descriptorSetLayouts.Init(128, sizeof(DescriptorSetLayout));
+    m_pipelines.Init(128, sizeof(Pipeline));
+    m_shaders.Init(128, sizeof(ShaderState));
+    m_descriptorSets.Init(128, sizeof(DescriptorSet));
+    m_samplers.Init(32, sizeof(Sampler));
+
+    VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+    for (size_t i = 0; i < kMaxSwapchainImages; ++i)
+    {
+        vkCreateSemaphore(m_vulkanDevice, &semaphoreInfo, m_vulkanAllocationCallbacks, &m_vulkanRenderCompleteSemaphore[i]);
+        vkCreateSemaphore(m_vulkanDevice, &semaphoreInfo, m_vulkanAllocationCallbacks, &m_vulkanImageAcquiredSemaphore[i]);
+
+        VkFenceCreateInfo fenceInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        vkCreateFence(m_vulkanDevice, &fenceInfo, m_vulkanAllocationCallbacks, &m_vulkanCommandBufferExecutedFence[i]);
+    }
+
+    s_commandBufferRing.Init(this);
+    m_queuedCommandBuffers.reserve(128);
+
+    m_vulkanImageIndex = 0;
+    m_currentFrame = 1;
+    m_previousFrame = 0;
+    m_absoluteFrame = 0;
+
+    m_resourceDeletionQueue.reserve(16);
+    m_descriptorSetUpdates.reserve(16);
+}
+
+void GpuDevice::Shutdown()
+{
+    vkDeviceWaitIdle(m_vulkanDevice);
+
+    s_commandBufferRing.Shutdown();
+
+    for (size_t i = 0; i < kMaxSwapchainImages; ++i)
+    {
+        vkDestroySemaphore(m_vulkanDevice, m_vulkanRenderCompleteSemaphore[i], m_vulkanAllocationCallbacks);
+        vkDestroySemaphore(m_vulkanDevice, m_vulkanImageAcquiredSemaphore[i], m_vulkanAllocationCallbacks);
+        vkDestroyFence(m_vulkanDevice, m_vulkanCommandBufferExecutedFence[i], m_vulkanAllocationCallbacks);
+    }
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(m_resourceDeletionQueue.size()); ++i)
+    {
+        ResourceUpdate &resourceDeletion = m_resourceDeletionQueue[i];
+
+        if (resourceDeletion.currentFrame == -1)
+            continue;
+
+        switch (resourceDeletion.type)
+        {
+        case ResourceDeletionType::Buffer:
+        {
+            DestroyBufferInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::Pipeline:
+        {
+            DestroyPipelineInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::RenderPass:
+        {
+            DestroyRenderPassInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::DescriptorSet:
+        {
+            DestroyDescriptorSetInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::DescriptorSetLayout:
+        {
+            DestroyDescriptorSetLayoutInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::Sampler:
+        {
+            DestroySamplerImmediate(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::ShaderState:
+        {
+            DestroyShaderStateInstant(resourceDeletion.handle);
+            break;
+        }
+
+        case ResourceDeletionType::Texture:
+        {
+            DestroyTextureInstant(resourceDeletion.handle);
+            break;
+        }
+        }
+    }
+
+    std::unordered_map<uint64_t, VkRenderPass>::iterator it = s_renderPassCache.begin();
+    while (it != s_renderPassCache.end())
+    {
+        VkRenderPass renderPass = it->second;
+        vkDestroyRenderPass(m_vulkanDevice, renderPass, m_vulkanAllocationCallbacks);
+        ++it;
+    }
+    s_renderPassCache.clear();
+
+    RenderPass* vkSwapchainPass = AccessRenderPass(m_swapchainPass);
+    vkDestroyRenderPass(m_vulkanDevice, vkSwapchainPass->renderPass, m_vulkanAllocationCallbacks);
+
+    DestroySwapchain();
+    vkDestroySurfaceKHR(m_vulkanInstance, m_vulkanWindowSurface, m_vulkanAllocationCallbacks);
+
+    vmaDestroyAllocator(m_vmaAllocator);
+
+    m_resourceDeletionQueue.clear();
+    m_descriptorSetUpdates.clear();
+
+    m_pipelines.Shutdown();
+    m_buffers.Shutdown();
+    m_shaders.Shutdown();
+    m_textures.Shutdown();
+    m_samplers.Shutdown();
+    m_descriptorSetLayouts.Shutdown();
+    m_descriptorSets.Shutdown();
+    m_renderPasses.Shutdown();
+
+    if (IsValidationsEnabled() && m_debugUtilsExtensionPresent)
+    {
+        PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_vulkanInstance, "vkDestroyDebugUtilsMessengerEXT");
+        vkDestroyDebugUtilsMessengerEXT(m_vulkanInstance, m_vulkanDebugMessenger, m_vulkanAllocationCallbacks);
+    }
+
+    vkDestroyDescriptorPool(m_vulkanDevice, m_vulkanDescriptorPool, m_vulkanAllocationCallbacks);
+    vkDestroyDevice(m_vulkanDevice, m_vulkanAllocationCallbacks);
+    vkDestroyInstance(m_vulkanInstance, m_vulkanAllocationCallbacks);
+
+    POKE_CORE_INFO("[GpuDevice] Gpu Device shutdown complete");
+}
+
+BufferHandle GpuDevice::CreateBuffer(const BufferCreation &creation)
+{
+    return BufferHandle();
 }

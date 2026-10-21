@@ -49,6 +49,12 @@ namespace Poke
         DescriptorSetCreation &TextureSampler(TextureHandle texture, SamplerHandle sampler, uint16_t binding);
         DescriptorSetCreation &SetName(const char *name);
     };
+
+    struct DescriptorSetUpdate
+    {
+        DescriptorSetHandle descriptor_set;
+        uint32_t frameIssued = 0;
+    };
 }
 
 #endif

@@ -7,7 +7,7 @@ namespace Poke
 {
     struct ResourcePool
     {
-        void Init(uint32_t poolSixe, uint32_t resourceSize);
+        void Init(uint32_t poolSize, uint32_t resourceSize);
         void Shutdown();
 
         uint32_t ObtainResource();

@@ -25,25 +25,6 @@ namespace Poke
 {
     class CommandBuffer;
 
-    enum class ResourceKey : uint8_t
-    {
-        Buffer,
-        Texture,
-        Pipeline,
-        Sampler,
-        DescriptorSetLayout,
-        DescriptorSet,
-        RenderPass,
-        ShaderState
-    };
-
-    struct DeferredDeletion
-    {
-        ResourceKey type;
-        uint32_t resourceIndex;
-        uint32_t frameIndex;
-    };
-
     struct DeviceCreation
     {
         void *window = nullptr;
@@ -162,22 +143,23 @@ namespace Poke
         VkPhysicalDevice GetVulkanPhysicalDevice() const { return m_vulkanPhysicalDevice; };
         VkQueue GetVulkanQueue() const { return m_vulkanQueue; };
         uint32_t GetVulkanQueueFamily() const { return m_vulkanQueueFamily; };
+        VkAllocationCallbacks *GetVulkanAllocationCallbacks() const { return m_vulkanAllocationCallbacks; }
 
     private:
         // Deferred destruction
-        void QueueDeletion(ResourceKey type, uint32_t resourceIndex);
+        void QueueDeletion(ResourceUpdate type, uint32_t resourceIndex);
         void ProcessDeferredDeletions(uint32_t frameIndex);
-        
-        // Immediate destruction
+
+        // Instant destruction
         void DestroyAllResources();
-        void DestroyBufferImmediate(uint32_t index);
-        void DestroyTextureImmediate(uint32_t index);
+        void DestroyBufferInstant(uint32_t index);
+        void DestroyTextureInstant(uint32_t index);
         void DestroySamplerImmediate(uint32_t index);
-        void DestroyShaderStateImmediate(uint32_t index);
-        void DestroyDescriptorSetLayoutImmediate(uint32_t index);
-        void DestroyDescriptorSetImmediate(uint32_t index);
-        void DestroyPipelineImmediate(uint32_t index);
-        void DestroyRenderPassImmediate(uint32_t index);
+        void DestroyShaderStateInstant(uint32_t index);
+        void DestroyDescriptorSetLayoutInstant(uint32_t index);
+        void DestroyDescriptorSetInstant(uint32_t index);
+        void DestroyPipelineInstant(uint32_t index);
+        void DestroyRenderPassInstant(uint32_t index);
 
         // Vulkan helpers
         bool FindQueueFamily(VkPhysicalDevice device);
@@ -193,7 +175,7 @@ namespace Poke
         void CreateSwapchain();
         void DestroySwapchain();
         void ResizeSwapchain();
-        VkRenderPass GetVulkanRenderPass(const RenderPassOutput& output, const char* name);
+        VkRenderPass GetVulkanRenderPass(const RenderPassOutput &output, const char *name);
 
         // Command buffer helpers
         void CreateCommandPools();
@@ -203,7 +185,6 @@ namespace Poke
     private:
         // Device state
         bool m_initialized = false;
-        void *m_windowHandle = nullptr;
 
         // Resource pools
         ResourcePool m_buffers;
@@ -225,16 +206,16 @@ namespace Poke
         TextureHandle m_depthTexture;
         RenderPassOutput m_swapchainOutput;
 
-        // Deferred updates and destruction
-        std::vector<DeferredDeletion> m_deferredDeletions;
-        std::vector<DescriptorSetHandle> m_pendingDescriptorSetUpdates;
+        // Resource updates and destruction
+        std::vector<ResourceUpdate> m_resourceDeletionQueue;
+        std::vector<DescriptorSetUpdate> m_descriptorSetUpdates;
         std::vector<CommandBuffer *> m_queuedCommandBuffers;
 
         // Frame management
-        static constexpr uint32_t kMaxFramesInFlight = 3;
-        uint32_t m_currentFrame = 0;
-        uint32_t m_previousFrame = 0;
-        uint32_t m_vulkanImageIndex = 0;
+        uint32_t m_currentFrame;
+        uint32_t m_previousFrame;
+        uint32_t m_absoluteFrame;
+        uint32_t m_vulkanImageIndex;
         bool m_resized = false;
         PresentMode::Enum m_presentMode = PresentMode::VSync;
 
@@ -265,16 +246,16 @@ namespace Poke
         VkFramebuffer m_vulkanSwapchainFramebuffers[kMaxSwapchainImages];
 
         // Command pools
-        VkCommandPool m_vulkanCommandPool[kMaxFramesInFlight];
+        VkCommandPool m_vulkanCommandPool[kMaxSwapchainImages];
         VkCommandPool m_vulkanInstantCommandPool;
 
         // Synchronization
         VkSemaphore m_vulkanRenderCompleteSemaphore[kMaxSwapchainImages];
-        VkSemaphore m_vulkanImageAcquiredSemaphore[kMaxFramesInFlight];
-        VkFence m_vulkanCommandBufferExecutedFence[kMaxFramesInFlight];
+        VkSemaphore m_vulkanImageAcquiredSemaphore[kMaxSwapchainImages];
+        VkFence m_vulkanCommandBufferExecutedFence[kMaxSwapchainImages];
 
         // Validation layers
-        VkAllocationCallbacks* m_vulkanAllocationCallbacks;
+        VkAllocationCallbacks *m_vulkanAllocationCallbacks;
         VkDebugUtilsMessengerEXT m_vulkanDebugMessenger;
         VkDebugReportCallbackEXT m_vulkanDebugReportCallback;
         bool m_debugUtilsExtensionPresent;
