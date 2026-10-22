@@ -392,7 +392,7 @@ void GpuDevice::Shutdown()
     }
     s_renderPassCache.clear();
 
-    RenderPass* vkSwapchainPass = AccessRenderPass(m_swapchainPass);
+    RenderPass *vkSwapchainPass = AccessRenderPass(m_swapchainPass);
     vkDestroyRenderPass(m_vulkanDevice, vkSwapchainPass->renderPass, m_vulkanAllocationCallbacks);
 
     DestroySwapchain();
@@ -427,5 +427,39 @@ void GpuDevice::Shutdown()
 
 BufferHandle GpuDevice::CreateBuffer(const BufferCreation &creation)
 {
-    return BufferHandle();
+    BufferHandle handle = {m_buffers.ObtainResource()};
+    if (handle.index == k_invalidResourceIndex)
+        return handle;
+
+    Buffer *buffer = AccessBuffer(handle);
+    buffer->name = creation.name;
+    buffer->size = creation.size;
+    buffer->typeFlags = creation.typeFlags;
+    buffer->usage = creation.usage;
+    buffer->handle = handle;
+    buffer->globalOffset = 0;
+    buffer->parentHandle = k_invalidBuffer;
+
+    static const VkBufferUsageFlags k_dynamicBufferMask = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    const bool useGlobalBuffer = (creation.typeFlags & k_dynamicBufferMask) != 0;
+    if (creation.usage == ResourceUsageType::Dynamic && useGlobalBuffer)
+    {
+        buffer->parentHandle = dynamicBuffer;
+    }
+    else
+    {
+        VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufferInfo.size = creation.size;
+        bufferInfo.usage = creation.typeFlags;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+        VkResult result = vmaCreateBuffer(m_vmaAllocator, &bufferInfo, &allocInfo, &buffer->buffer, &buffer->allocation, nullptr);
+        POKE_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan buffer");
+
+        if (creation.initialData != nullptr)
+            s_commandBufferRing.UploadBuffer(buffer->buffer, creation.size, creation.initialData);
+    }
 }

@@ -7,6 +7,7 @@ namespace Poke
 {
     using ResourceHandle = uint32_t;
 
+    static constexpr uint32_t k_invalidResourceIndex = 0xffffffff;
     inline constexpr ResourceHandle InvalidResource = 0xffffffff;
     static constexpr ResourceHandle k_invalidIndex = InvalidResource;
 
