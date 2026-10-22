@@ -84,11 +84,13 @@ void GpuDevice::Init(const DeviceCreation &creation)
 {
     POKE_CORE_INFO("[GpuDevice] Gpu Device initializing");
 
+    // Create vulkan instance
     VkResult result;
 
     VkApplicationInfo applicationInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, "Poke Graphics Device", 1, "PokeEngine", 1, VK_MAKE_VERSION(1, 2, 0)};
     VkInstanceCreateInfo createInfo = IsValidationsEnabled() ? createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions}
                                                              : createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
+    // Create debug validation layers
     const VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = createDebugUtilsMessengerInfo();
     createInfo.pNext = &debugCreateInfo;
     result = vkCreateInstance(&createInfo, m_vulkanAllocationCallbacks, &m_vulkanInstance);
@@ -119,6 +121,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
         vkCreateDebugUtilsMessengerEXT(m_vulkanInstance, &debugMessengerCreateInfo, m_vulkanAllocationCallbacks, &m_vulkanDebugMessenger);
     }
 
+    // Create Surface and select physical device
     uint32_t numPhysicalDevice;
     result = vkEnumeratePhysicalDevices(m_vulkanInstance, &numPhysicalDevice, NULL);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to enumerate physical devices");
@@ -132,6 +135,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
     s_sdlWindow = window;
 
+    // Create a phyisical and logical device
     VkPhysicalDevice discreteGpu = VK_NULL_HANDLE;
     VkPhysicalDevice integratedGpu = VK_NULL_HANDLE;
     for (uint32_t i = 0; i < numPhysicalDevice; ++i)
@@ -245,6 +249,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     m_swapchainOutput.SetColor(m_vulkanSurfaceFormat.format);
     SetPresentMode(m_presentMode);
 
+    // Create swapchain and VMA allocator
     CreateSwapchain();
 
     VmaAllocatorCreateInfo allocatorInfo = {};
@@ -255,6 +260,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     result = vmaCreateAllocator(&allocatorInfo, &m_vmaAllocator);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to create VMA allocator");
 
+    // Create descriptor pool
     static const uint32_t k_globalPoolElements = 128;
     VkDescriptorPoolSize poolSizes[] =
         {
@@ -288,6 +294,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     m_descriptorSets.Init(128, sizeof(DescriptorSet));
     m_samplers.Init(32, sizeof(Sampler));
 
+    // Create per frame synchronization objects
     VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     for (size_t i = 0; i < kMaxSwapchainImages; ++i)
     {
@@ -309,6 +316,46 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
     m_resourceDeletionQueue.reserve(16);
     m_descriptorSetUpdates.reserve(16);
+
+    // Create default sampler
+    SamplerCreation samplerCreation;
+    samplerCreation.SetAddressModeUVW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+        .SetMinMagMip(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR)
+        .SetName("SamplerDefault");
+    m_defaultSampler = CreateSampler(samplerCreation);
+
+    // Create fullscreen vertex buffer
+    BufferCreation bufferCreation = {VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, ResourceUsageType::Immutable, 0, nullptr, "FullscreenVertexBuffer"};
+    m_fullscreenVertexBuffer = CreateBuffer(bufferCreation);
+
+    // Create depth image
+    TextureCreation depthTextureCreation = {nullptr, m_swapchainWidth, m_swapchainHeight, 1, 1, 0, VK_FORMAT_D32_SFLOAT, TextureType::Texture2D, "DepthTexture"};
+    m_depthTexture = CreateTexture(depthTextureCreation);
+
+    // Cache depth texture format
+    m_swapchainOutput.SetDepthStencil(VK_FORMAT_D32_SFLOAT);
+
+    // Create swapchain render pass
+    RenderPassCreation swapchainPassCreation;
+    swapchainPassCreation.SetType(RenderPassType::Swapchain).SetName("Swapchain");
+    swapchainPassCreation.SetOperations(RenderPassOperation::Clear, RenderPassOperation::Clear, RenderPassOperation::Clear);
+    m_swapchainPass = CreateRenderPass(swapchainPassCreation);
+
+    // Create default texture and constant buffer
+    TextureCreation defaultTextureCreation = {nullptr, 1, 1, 1, 1, 0, VK_FORMAT_R8_UINT, TextureType::Texture2D};
+    m_defaultTexture = CreateTexture(defaultTextureCreation);
+
+    BufferCreation defaultConstantBufferCreation = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, 16, nullptr, "DefaultConstantBuffer"};
+    m_defaultConstantBuffer = CreateBuffer(defaultConstantBufferCreation);
+
+    // Create dynamic buffer
+    m_dynamicPerFrameSize = 1024 * 1024 * 10;
+    BufferCreation bufferCreation;
+    bufferCreation.Set(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, m_dynamicPerFrameSize * 3).SetName("DynamicBuffer");
+    m_dynamicBuffer = CreateBuffer(bufferCreation);
+
+    MapBufferParameters constantBufferMap = {m_dynamicBuffer, 0, 0};
+    m_dynamicMappedMemory = static_cast<uint8_t *>(MapBuffer(constantBufferMap));
 }
 
 void GpuDevice::Shutdown()
@@ -444,22 +491,263 @@ BufferHandle GpuDevice::CreateBuffer(const BufferCreation &creation)
     const bool useGlobalBuffer = (creation.typeFlags & k_dynamicBufferMask) != 0;
     if (creation.usage == ResourceUsageType::Dynamic && useGlobalBuffer)
     {
-        buffer->parentHandle = dynamicBuffer;
+        buffer->parentHandle = m_dynamicBuffer;
+        return handle;
+    }
+
+    VkBufferCreateInfo bufferCreateInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | creation.typeFlags;
+    bufferCreateInfo.size = creation.size > 0 ? creation.size : 1;
+
+    VmaAllocationCreateInfo memoryInfo = {};
+    memoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+    memoryInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+    VmaAllocationInfo allocationInfo{};
+    VkResult result = vmaCreateBuffer(m_vmaAllocator, &bufferCreateInfo, &memoryInfo, &buffer->buffer, &buffer->allocation, &allocationInfo);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create buffer");
+    SetResourceName(VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer->buffer), creation.name);
+
+    buffer->memory = allocationInfo.deviceMemory;
+
+    if (creation.initialData)
+    {
+        void *data;
+        vmaMapMemory(m_vmaAllocator, buffer->allocation, &data);
+        memcpy(data, creation.initialData, static_cast<size_t>(creation.size));
+        vmaUnmapMemory(m_vmaAllocator, buffer->allocation);
+    }
+
+    return handle;
+}
+
+TextureHandle GpuDevice::CreateTexture(const TextureCreation &creation)
+{
+    uint32_t resourceIndex = m_textures.ObtainResource();
+    TextureHandle handle = {resourceIndex};
+    if (resourceIndex == k_invalidIndex)
+        return handle;
+
+    Texture *texture = AccessTexture(handle);
+    texture->width = creation.width;
+    texture->height = creation.height;
+    texture->depth = creation.depth;
+    texture->mipmaps = creation.mipmaps;
+    texture->type = creation.type;
+    texture->name = creation.name;
+    texture->format = creation.format;
+    texture->sampler = nullptr;
+    texture->flags = creation.flags;
+
+    texture->handle = handle;
+
+    VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imageCreateInfo.format = texture->format;
+    imageCreateInfo.flags = 0;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D; // here should be a converter enum to vkImagetype
+    imageCreateInfo.extent.width = creation.width;
+    imageCreateInfo.extent.height = creation.height;
+    imageCreateInfo.extent.depth = creation.depth;
+    imageCreateInfo.mipLevels = creation.mipmaps;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+    const bool isRenderTarget = (creation.flags & TextureFlags::RenderTargetMask) == TextureFlags::RenderTargetMask;
+    const bool isComputeUsed = (creation.flags & TextureFlags::ComputeMask) == TextureFlags::ComputeMask;
+
+    imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageCreateInfo.usage |= isComputeUsed ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
+
+    if (TextureFormat::HasDepthOrStencil(creation.format))
+    {
+        imageCreateInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
     else
     {
-        VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        bufferInfo.size = creation.size;
-        bufferInfo.usage = creation.typeFlags;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo allocInfo = {};
-        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-        VkResult result = vmaCreateBuffer(m_vmaAllocator, &bufferInfo, &allocInfo, &buffer->buffer, &buffer->allocation, nullptr);
-        POKE_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan buffer");
-
-        if (creation.initialData != nullptr)
-            s_commandBufferRing.UploadBuffer(buffer->buffer, creation.size, creation.initialData);
+        imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCreateInfo.usage |= isRenderTarget ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0;
     }
+
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VmaAllocationCreateInfo memoryInfo{};
+    memoryInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    VkResult result = vmaCreateImage(m_vmaAllocator, &imageCreateInfo, &memoryInfo, &texture->image, &texture->allocation, nullptr);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create texture image");
+    SetResourceName(VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(texture->image), creation.name);
+
+    VkImageViewCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    info.image = texture->image;
+    info.viewType = VK_IMAGE_VIEW_TYPE_2D; // here should be a converter enum to vkImageViewType
+    info.format = imageCreateInfo.format;
+
+    if (TextureFormat::HasDepthOrStencil(creation.format))
+    {
+        info.subresourceRange.aspectMask = TextureFormat::HasDepth(creation.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0;
+    }
+    else
+    {
+        info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    info.subresourceRange.levelCount = 1;
+    info.subresourceRange.layerCount = 1;
+    result = vkCreateImageView(m_vulkanDevice, &info, m_vulkanAllocationCallbacks, &texture->view);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create texture image view");
+
+    SetResourceName(VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(texture->view), creation.name);
+
+    texture->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    if (creation.initialData)
+    {
+        VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        uint32_t imageSize = creation.width * creation.height * 4;
+        bufferInfo.size = imageSize;
+
+        VmaAllocationCreateInfo memoryInfo{};
+        memoryInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        memoryInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+
+        VmaAllocationInfo allocationInfo{};
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingAllocation;
+        result = vmaCreateBuffer(m_vmaAllocator, &bufferInfo, &memoryInfo, &stagingBuffer, &stagingAllocation, &allocationInfo);
+        POKE_ASSERT(result == VK_SUCCESS, "Failed to create staging buffer");
+
+        void *destData;
+        vmaMapMemory(m_vmaAllocator, stagingAllocation, &destData);
+        memcpy(destData, creation.initialData, static_cast<size_t>(imageSize));
+        vmaUnmapMemory(m_vmaAllocator, stagingAllocation);
+
+        VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        CommandBuffer *commandBuffer = GetInstantCommandBuffer();
+        vkBeginCommandBuffer(commandBuffer->m_commandBuffer, &beginInfo);
+
+        VkBufferImageCopy region = {};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {creation.width, creation.height, creation.depth};
+
+        VkImageMemoryBarrier barrierF = {};
+        barrierF.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrierF.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrierF.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+        barrierF.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrierF.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        barrierF.image = texture->image;
+        barrierF.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrierF.subresourceRange.baseMipLevel = 0;
+        barrierF.subresourceRange.levelCount = 1;
+        barrierF.subresourceRange.baseArrayLayer = 0;
+        barrierF.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags sourceStageF = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkPipelineStageFlags dstStageF = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+        barrierF.srcAccessMask = 0;
+        barrierF.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer->m_commandBuffer, sourceStageF, dstStageF, 0, 0, nullptr, 0, nullptr, 1, &barrierF);
+
+        vkCmdCopyBufferToImage(commandBuffer->m_commandBuffer, stagingBuffer, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+        VkImageMemoryBarrier barrierS = {};
+        barrierS.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrierS.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrierS.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        barrierS.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrierS.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        barrierS.image = texture->image;
+        barrierS.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrierS.subresourceRange.baseMipLevel = 0;
+        barrierS.subresourceRange.levelCount = 1;
+        barrierS.subresourceRange.baseArrayLayer = 0;
+        barrierS.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags sourceStageS = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        VkPipelineStageFlags dstStageS = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        barrierS.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrierS.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer->m_commandBuffer, sourceStageS, dstStageS, 0, 0, nullptr, 0, nullptr, 1, &barrierS);
+
+        vkEndCommandBuffer(commandBuffer->m_commandBuffer);
+
+        VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer->m_commandBuffer;
+
+        vkQueueSubmit(m_vulkanQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_vulkanQueue);
+
+        vmaDestroyBuffer(m_vmaAllocator, stagingBuffer, stagingAllocation);
+
+        vkResetCommandBuffer(commandBuffer->m_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+        texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+
+    return handle;
+}
+
+PipelineHandle GpuDevice::CreatePipeline(const PipelineCreation &creation)
+{
+    PipelineHandle handle = {m_pipelines.ObtainResource()};
+    if (handle.index == k_invalidIndex)
+        return handle;
+
+    ShaderStateHandle shaderState = CreateShaderState(creation.shaders);
+    if (shaderState.index == k_invalidIndex)
+    {
+        m_pipelines.ReleaseResource(handle.index);
+        handle.index = k_invalidIndex;
+
+        return handle;
+    }
+
+    Pipeline *pipeline = AccessPipeline(handle);
+    ShaderState *shaderStateData = AccessShaderState(shaderState);
+
+    pipeline->shaderState = shaderState;
+
+    VkDescriptorSetLayout vkLayouts[kMaxDescriptorSetLayouts];
+
+    for (uint32_t i = 0; i < creation.activeLayoutsCount; ++i)
+    {
+        pipeline->descriptorSetLayouts[i] = AccessDescriptorSetLayout(creation.descriptorSetLayouts[i]);
+        pipeline->descriptorSetLayoutHandles[i] = creation.descriptorSetLayouts[i];
+
+        vkLayouts[i] = pipeline->descriptorSetLayouts[i]->layout;
+    }
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    pipelineLayoutInfo.pSetLayouts = vkLayouts;
+    pipelineLayoutInfo.setLayoutCount = creation.activeLayoutsCount;
+
+    VkPipelineLayout pipelineLayout;
+    VkResult result = vkCreatePipelineLayout(m_vulkanDevice, &pipelineLayoutInfo, m_vulkanAllocationCallbacks, &pipelineLayout);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to create Pipeline layout");
+    pipeline->pipelineLayout = pipelineLayout;
+    pipeline->numActiveLayouts = creation.activeLayoutsCount;
+
+    // create pipeline
+    // ---------------
 }

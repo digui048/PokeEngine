@@ -214,6 +214,29 @@ namespace Poke
             DontCare, Load, Clear, Count
         };
     }
+
+    namespace TextureFormat
+    {
+        inline bool IsDepthStencil(VkFormat value) {
+            return value == VK_FORMAT_D16_UNORM_S8_UINT || value == VK_FORMAT_D24_UNORM_S8_UINT || value == VK_FORMAT_D32_SFLOAT_S8_UINT;
+        }
+        inline bool IsDepthOnly(VkFormat value) {
+            return value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_D32_SFLOAT;
+        }
+        inline bool IsStencilOnly(VkFormat value) {
+            return value == VK_FORMAT_S8_UINT;
+        }
+
+        inline bool HasDepth(VkFormat value) {
+            return (value >= VK_FORMAT_D16_UNORM && value < VK_FORMAT_S8_UINT ) || (value >= VK_FORMAT_D16_UNORM_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT);
+        }
+        inline bool HasStencil(VkFormat value) {
+            return value >= VK_FORMAT_S8_UINT && value <= VK_FORMAT_D32_SFLOAT_S8_UINT;
+        }
+        inline bool HasDepthOrStencil(VkFormat value) {
+            return value >= VK_FORMAT_D16_UNORM && value <= VK_FORMAT_D32_SFLOAT_S8_UINT;
+        }
+    }
 }
 
 #endif

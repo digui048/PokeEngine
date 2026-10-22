@@ -22,6 +22,13 @@ namespace Poke
         BufferCreation &SetData(void *data);
         BufferCreation &SetName(const char *name);
     };
+
+    struct MapBufferParameters
+    {
+        BufferHandle buffer;
+        uint32_t offset = 0;
+        uint32_t size = 0;
+    };
 }
 
 #endif

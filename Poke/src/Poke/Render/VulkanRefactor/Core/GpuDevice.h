@@ -120,8 +120,8 @@ namespace Poke
         void ResizeOutputTextures(RenderPassHandle renderPass, uint16_t width, uint16_t height);
 
         // Buffer Mapping
-        void *MapBuffer(BufferHandle handle);
-        void UnmapBuffer(BufferHandle handle);
+        void *MapBuffer(MapBufferParameters& handle);
+        void UnmapBuffer(MapBufferParameters& handle);
 
         // Rendering
         void NewFrame();
@@ -259,6 +259,13 @@ namespace Poke
         VkDebugUtilsMessengerEXT m_vulkanDebugMessenger;
         VkDebugReportCallbackEXT m_vulkanDebugReportCallback;
         bool m_debugUtilsExtensionPresent;
+
+        // Dynamic resources
+        uint32_t m_dynamicMaxPerFrameSize;
+        uint32_t m_dynamicPerFrameSize;
+        BufferHandle m_dynamicBuffer;
+        uint8_t *m_dynamicMappedMemory;
+        uint32_t m_dynamicAllocatedSize;
     };
 }
 
