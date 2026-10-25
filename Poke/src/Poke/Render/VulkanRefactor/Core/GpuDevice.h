@@ -163,8 +163,8 @@ namespace Poke
 
         // Vulkan helpers
         bool FindQueueFamily(VkPhysicalDevice device);
-        void CreateInstance();
-        void CreateSurface();
+        void CreateInstance(const DeviceCreation& creation);
+        void CreateSurface(const DeviceCreation& creation);
         void SelectPhysicalDevice();
         void CreateLogicalDevice();
         void CreateDescriptorPool();

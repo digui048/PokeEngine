@@ -80,13 +80,9 @@ bool GpuDevice::FindQueueFamily(VkPhysicalDevice device)
     return surfaceSupported;
 }
 
-void GpuDevice::Init(const DeviceCreation &creation)
+void GpuDevice::CreateInstance(const DeviceCreation &creation)
 {
-    POKE_CORE_INFO("[GpuDevice] Gpu Device initializing");
-
-    // Create vulkan instance
     VkResult result;
-
     VkApplicationInfo applicationInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, "Poke Graphics Device", 1, "PokeEngine", 1, VK_MAKE_VERSION(1, 2, 0)};
     VkInstanceCreateInfo createInfo = IsValidationsEnabled() ? createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions}
                                                              : createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
@@ -120,8 +116,20 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
         vkCreateDebugUtilsMessengerEXT(m_vulkanInstance, &debugMessengerCreateInfo, m_vulkanAllocationCallbacks, &m_vulkanDebugMessenger);
     }
+}
 
-    // Create Surface and select physical device
+void GpuDevice::CreateSurface(const DeviceCreation &creation)
+{
+    SDL_Window *window = (SDL_Window *)creation.window;
+    if (!SDL_Vulkan_CreateSurface(window, m_vulkanInstance, nullptr, &m_vulkanWindowSurface))
+        POKE_CORE_ERROR("[GpuDevice] Failed to create Vulkan surface");
+
+    s_sdlWindow = window;
+}
+
+void GpuDevice::SelectPhysicalDevice()
+{
+    VkResult result;
     uint32_t numPhysicalDevice;
     result = vkEnumeratePhysicalDevices(m_vulkanInstance, &numPhysicalDevice, NULL);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to enumerate physical devices");
@@ -129,13 +137,6 @@ void GpuDevice::Init(const DeviceCreation &creation)
     result = vkEnumeratePhysicalDevices(m_vulkanInstance, &numPhysicalDevice, gpus.data());
     POKE_ASSERT(result == VK_SUCCESS, "Failed to enumerate physical devices");
 
-    SDL_Window *window = (SDL_Window *)creation.window;
-    if (!SDL_Vulkan_CreateSurface(window, m_vulkanInstance, nullptr, &m_vulkanWindowSurface))
-        POKE_CORE_ERROR("[GpuDevice] Failed to create Vulkan surface");
-
-    s_sdlWindow = window;
-
-    // Create a phyisical and logical device
     VkPhysicalDevice discreteGpu = VK_NULL_HANDLE;
     VkPhysicalDevice integratedGpu = VK_NULL_HANDLE;
     for (uint32_t i = 0; i < numPhysicalDevice; ++i)
@@ -176,7 +177,10 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
     s_uboAlignment = m_vulkanPhysicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
     s_ssboAlignment = m_vulkanPhysicalDeviceProperties.limits.minStorageBufferOffsetAlignment;
+}
 
+void GpuDevice::CreateLogicalDevice()
+{
     uint32_t deviceExtensionCount = 1;
     const char *deviceExtensions[] = {"VK_KHR_swapchain"};
     const float queuePriority[] = {1.0f};
@@ -197,7 +201,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
     deviceCreateInfo.pNext = &physicalFeatures2;
 
-    result = vkCreateDevice(m_vulkanPhysicalDevice, &deviceCreateInfo, m_vulkanAllocationCallbacks, &m_vulkanDevice);
+    VkResult result = vkCreateDevice(m_vulkanPhysicalDevice, &deviceCreateInfo, m_vulkanAllocationCallbacks, &m_vulkanDevice);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to create logical device");
 
     if (m_debugUtilsExtensionPresent)
@@ -210,7 +214,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     vkGetDeviceQueue(m_vulkanDevice, m_vulkanQueueFamily, 0, &m_vulkanQueue);
 
     int windowW, windowH;
-    SDL_GetWindowSize(window, &windowW, &windowH);
+    SDL_GetWindowSize(s_sdlWindow, &windowW, &windowH);
 
     const VkFormat surfaceImageFormats[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
     const VkColorSpaceKHR surfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
@@ -259,8 +263,10 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
     result = vmaCreateAllocator(&allocatorInfo, &m_vmaAllocator);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to create VMA allocator");
+}
 
-    // Create descriptor pool
+void GpuDevice::CreateDescriptorPool()
+{
     static const uint32_t k_globalPoolElements = 128;
     VkDescriptorPoolSize poolSizes[] =
         {
@@ -282,7 +288,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     poolInfo.maxSets = k_globalPoolElements * (sizeof(poolSizes) / sizeof((poolSizes)[0]));
     poolInfo.poolSizeCount = static_cast<uint32_t>(sizeof(poolSizes) / sizeof((poolSizes)[0]));
     poolInfo.pPoolSizes = poolSizes;
-    result = vkCreateDescriptorPool(m_vulkanDevice, &poolInfo, m_vulkanAllocationCallbacks, &m_vulkanDescriptorPool);
+    VkResult result = vkCreateDescriptorPool(m_vulkanDevice, &poolInfo, m_vulkanAllocationCallbacks, &m_vulkanDescriptorPool);
     POKE_ASSERT(result == VK_SUCCESS, "Failed to create descriptor pool");
 
     m_buffers.Init(4096, sizeof(Buffer));
@@ -293,8 +299,10 @@ void GpuDevice::Init(const DeviceCreation &creation)
     m_shaders.Init(128, sizeof(ShaderState));
     m_descriptorSets.Init(128, sizeof(DescriptorSet));
     m_samplers.Init(32, sizeof(Sampler));
+}
 
-    // Create per frame synchronization objects
+void GpuDevice::CreateSynchronizationObjects()
+{
     VkSemaphoreCreateInfo semaphoreInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     for (size_t i = 0; i < kMaxSwapchainImages; ++i)
     {
@@ -306,13 +314,25 @@ void GpuDevice::Init(const DeviceCreation &creation)
         vkCreateFence(m_vulkanDevice, &fenceInfo, m_vulkanAllocationCallbacks, &m_vulkanCommandBufferExecutedFence[i]);
     }
 
-    s_commandBufferRing.Init(this);
-    m_queuedCommandBuffers.reserve(128);
-
     m_vulkanImageIndex = 0;
     m_currentFrame = 1;
     m_previousFrame = 0;
     m_absoluteFrame = 0;
+}
+
+void GpuDevice::Init(const DeviceCreation &creation)
+{
+    POKE_CORE_INFO("[GpuDevice] Gpu Device initializing");
+
+    CreateInstance(creation);
+    CreateSurface(creation);
+    SelectPhysicalDevice();
+    CreateLogicalDevice();
+    CreateDescriptorPool();
+    CreateSynchronizationObjects();
+
+    s_commandBufferRing.Init(this);
+    m_queuedCommandBuffers.reserve(128);
 
     m_resourceDeletionQueue.reserve(16);
     m_descriptorSetUpdates.reserve(16);
