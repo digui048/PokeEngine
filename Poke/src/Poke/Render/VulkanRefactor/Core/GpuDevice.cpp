@@ -943,3 +943,36 @@ PipelineHandle GpuDevice::CreatePipeline(const PipelineCreation &creation)
 
     return handle;
 }
+
+SamplerHandle GpuDevice::CreateSampler(const SamplerCreation &creation)
+{
+    SamplerHandle handle = {m_samplers.ObtainResource()};
+    if (handle.index == k_invalidIndex)
+        return handle;
+
+    Sampler *sampler = AccessSampler(handle);
+    sampler->addressU = creation.addressU;
+    sampler->addressV = creation.addressV;
+    sampler->addressW = creation.addressW;
+    sampler->minFilter = creation.minFilter;
+    sampler->magFilter = creation.magFilter;
+    sampler->mipmapMode = creation.mipmapMode;
+    sampler->name = creation.name;
+
+    VkSamplerCreateInfo createInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    createInfo.addressModeU = creation.addressU;
+    createInfo.addressModeV = creation.addressV;
+    createInfo.addressModeW = creation.addressW;
+    createInfo.minFilter = creation.minFilter;
+    createInfo.magFilter = creation.magFilter;
+    createInfo.mipmapMode = creation.mipmapMode;
+    createInfo.anisotropyEnable = 0;
+    createInfo.compareEnable = 0;
+    createInfo.unnormalizedCoordinates = 0;
+    createInfo.borderColor = VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+
+    vkCreateSampler(m_vulkanDevice, &createInfo, m_vulkanAllocationCallbacks, &sampler->sampler);
+    SetResourceName(VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler->sampler), creation.name);
+    
+    return handle;
+}

@@ -6,30 +6,30 @@ SamplerCreation &SamplerCreation::SetMinMagMip(VkFilter min, VkFilter mag, VkSam
 {
     minFilter = min;
     magFilter = mag;
-    mipFilter = mip;
+    mipmapMode = mip;
 
     return *this;
 }
 
 SamplerCreation &SamplerCreation::SetAddressModeU(VkSamplerAddressMode u)
 {
-    adressU = u;
+    addressU = u;
     return *this;
 }
 
 SamplerCreation &SamplerCreation::SetAddressModeUV(VkSamplerAddressMode u, VkSamplerAddressMode v)
 {
-    adressU = u;
-    adressV = v;
+    addressU = u;
+    addressV = v;
 
     return *this;
 }
 
 SamplerCreation &SamplerCreation::SetAddressModeUVW(VkSamplerAddressMode u, VkSamplerAddressMode v, VkSamplerAddressMode w)
 {
-    adressU = u;
-    adressV = v;
-    adressW = w;
+    addressU = u;
+    addressV = v;
+    addressW = w;
 
     return *this;
 }

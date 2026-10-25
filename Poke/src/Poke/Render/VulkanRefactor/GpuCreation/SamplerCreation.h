@@ -9,11 +9,11 @@ namespace Poke
     {
         VkFilter minFilter = VK_FILTER_NEAREST;
         VkFilter magFilter = VK_FILTER_NEAREST;
-        VkSamplerMipmapMode mipFilter = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
-        VkSamplerAddressMode adressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        VkSamplerAddressMode adressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        VkSamplerAddressMode adressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
         const char *name = nullptr;
 
