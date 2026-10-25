@@ -86,8 +86,10 @@ void GpuDevice::CreateInstance(const DeviceCreation &creation)
     VkResult result;
     VkApplicationInfo applicationInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, "Poke Graphics Device", 1, "PokeEngine", 1, VK_MAKE_VERSION(1, 2, 0)};
     VkInstanceCreateInfo createInfo;
-    if(IsValidationsEnabled()) createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions};
-    else createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
+    if (IsValidationsEnabled())
+        createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions};
+    else
+        createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
     // Create debug validation layers
     const VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = createDebugUtilsMessengerInfo();
     createInfo.pNext = &debugCreateInfo;
@@ -566,7 +568,7 @@ TextureHandle GpuDevice::CreateTexture(const TextureCreation &creation)
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageCreateInfo.format = texture->format;
     imageCreateInfo.flags = 0;
-    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D; // here should be a converter enum to vkImagetype
+    imageCreateInfo.imageType = /*converter(creation.type)*/ VK_IMAGE_TYPE_2D; // here should be a converter enum to vkImagetype
     imageCreateInfo.extent.width = creation.width;
     imageCreateInfo.extent.height = creation.height;
     imageCreateInfo.extent.depth = creation.depth;
@@ -602,7 +604,7 @@ TextureHandle GpuDevice::CreateTexture(const TextureCreation &creation)
 
     VkImageViewCreateInfo info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     info.image = texture->image;
-    info.viewType = VK_IMAGE_VIEW_TYPE_2D; // here should be a converter enum to vkImageViewType
+    info.viewType = /*converter(creation.type)*/ VK_IMAGE_VIEW_TYPE_2D; // here should be a converter enum to vkImageViewType
     info.format = imageCreateInfo.format;
 
     if (TextureFormat::HasDepthOrStencil(creation.format))
@@ -777,15 +779,166 @@ PipelineHandle GpuDevice::CreatePipeline(const PipelineCreation &creation)
         pipelineInfo.stageCount = shaderStateData->activeShaders;
         pipelineInfo.layout = pipelineLayout;
 
-        VkPipelineVertexInputStateCreateFlags vertexInputState = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
         VkVertexInputAttributeDescription vertexAttributes[8];
         if (creation.vertexInput.attributeCount)
         {
             for (uint32_t i = 0; i < creation.vertexInput.attributeCount; ++i)
             {
                 const VertexAttribute &vertexAttribute = creation.vertexInput.attributes[i];
+                vertexAttributes[i] = {vertexAttribute.location, vertexAttribute.binding, /*converter(vertexAttribute.format)*/ VK_FORMAT_R8_SNORM, vertexAttribute.offset}; // here it should be a converter
+            }
+
+            vertexInputInfo.vertexAttributeDescriptionCount = creation.vertexInput.attributeCount;
+            vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes;
+        }
+        else
+        {
+            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+            vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+        }
+
+        VkVertexInputBindingDescription vertexBindings[8];
+        if (creation.vertexInput.streamCount)
+        {
+            vertexInputInfo.vertexBindingDescriptionCount = creation.vertexInput.streamCount;
+
+            for (uint32_t i = 0; i < creation.vertexInput.streamCount; ++i)
+            {
+                const VertexStream &vertexStream = creation.vertexInput.streams[i];
+                VkVertexInputRate vertexRate = vertexStream.inputRate == VertexInputRate::PerVertex ? VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX : VkVertexInputRate::VK_VERTEX_INPUT_RATE_INSTANCE;
+                vertexBindings[i] = {vertexStream.binding, vertexStream.stride, vertexRate};
+            }
+            vertexInputInfo.pVertexBindingDescriptions = vertexBindings;
+        }
+        else
+        {
+            vertexInputInfo.vertexBindingDescriptionCount = 0;
+            vertexInputInfo.pVertexBindingDescriptions = nullptr;
+        }
+
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachment[8];
+        if (creation.blendState.activeStates)
+        {
+            for (size_t i = 0; i < creation.blendState.activeStates; ++i)
+            {
+                const BlendState &blendState = creation.blendState.blendStates[i];
+                colorBlendAttachment[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+                colorBlendAttachment[i].blendEnable = blendState.blendEnable ? VK_TRUE : VK_FALSE;
+                colorBlendAttachment[i].srcColorBlendFactor = blendState.sourceColor;
+                colorBlendAttachment[i].dstColorBlendFactor = blendState.destinationColor;
+                colorBlendAttachment[i].colorBlendOp = blendState.colorOperation;
+
+                if (blendState.separeteBlend)
+                {
+                    colorBlendAttachment[i].srcAlphaBlendFactor = blendState.sourceAlpha;
+                    colorBlendAttachment[i].dstAlphaBlendFactor = blendState.destinationAlpha;
+                    colorBlendAttachment[i].alphaBlendOp = blendState.alphaOperation;
+                }
+                else
+                {
+                    colorBlendAttachment[i].srcAlphaBlendFactor = blendState.sourceColor;
+                    colorBlendAttachment[i].dstAlphaBlendFactor = blendState.destinationColor;
+                    colorBlendAttachment[i].alphaBlendOp = blendState.colorOperation;
+                }
             }
         }
+        else
+        {
+            colorBlendAttachment[0] = {};
+            colorBlendAttachment[0].blendEnable = VK_FALSE;
+            colorBlendAttachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        }
+
+        VkPipelineColorBlendStateCreateInfo colorBlending{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = creation.blendState.activeStates ? creation.blendState.activeStates : 1;
+        colorBlending.pAttachments = colorBlendAttachment;
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+
+        pipelineInfo.pColorBlendState = &colorBlending;
+
+        VkPipelineDepthStencilStateCreateInfo depthStencil{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+        depthStencil.depthWriteEnable = creation.depthStencil.depthWriteEnable ? VK_TRUE : VK_FALSE;
+        depthStencil.stencilTestEnable = creation.depthStencil.stencilEnable ? VK_TRUE : VK_FALSE;
+        depthStencil.depthTestEnable = creation.depthStencil.depthEnable ? VK_TRUE : VK_FALSE;
+        depthStencil.depthCompareOp = creation.depthStencil.depthCompare;
+
+        pipelineInfo.pDepthStencilState = &depthStencil;
+
+        VkPipelineMultisampleStateCreateInfo multisampling = {};
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisampling.minSampleShading = 1.0f;
+        multisampling.pSampleMask = nullptr;
+        multisampling.alphaToCoverageEnable = VK_FALSE;
+        multisampling.alphaToOneEnable = VK_FALSE;
+
+        pipelineInfo.pMultisampleState = &multisampling;
+
+        VkPipelineRasterizationStateCreateInfo rasterizer{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = creation.rasterization.cullMode;
+        rasterizer.frontFace = creation.rasterization.frontFace;
+        rasterizer.depthBiasEnable = VK_FALSE;
+
+        pipelineInfo.pRasterizationState = &rasterizer;
+
+        VkViewport viewport = {};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(m_swapchainWidth);
+        viewport.height = static_cast<float>(m_swapchainHeight);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor = {};
+        scissor.offset = {0, 0};
+        scissor.extent = {m_swapchainWidth, m_swapchainHeight};
+
+        VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+        viewportState.viewportCount = 1;
+        viewportState.pViewports = &viewport;
+        viewportState.scissorCount = 1;
+        viewportState.pScissors = &scissor;
+
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.renderPass = GetVulkanRenderPass(creation.renderPass, creation.name);
+
+        VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        VkPipelineDynamicStateCreateInfo dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+        dynamicState.dynamicStateCount = sizeof(dynamicStates) / (sizeof(dynamicStates)[0]);
+        dynamicState.pDynamicStates = dynamicStates;
+
+        pipelineInfo.pDynamicState = &dynamicState;
+
+        vkCreateGraphicsPipelines(m_vulkanDevice, VK_NULL_HANDLE, 1, &pipelineInfo, m_vulkanAllocationCallbacks, &pipeline->pipeline);
+        pipeline->bindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+    }
+    else
+    {
+        VkComputePipelineCreateInfo pipelineInfo{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+        pipelineInfo.stage = shaderStateData->stageInfos[0];
+        pipelineInfo.layout = pipelineLayout;
+
+        vkCreateComputePipelines(m_vulkanDevice, VK_NULL_HANDLE, 1, &pipelineInfo, m_vulkanAllocationCallbacks, &pipeline->pipeline);
+        pipeline->bindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_COMPUTE;
     }
 
     return handle;

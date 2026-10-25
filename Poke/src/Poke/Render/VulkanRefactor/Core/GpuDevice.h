@@ -169,7 +169,6 @@ namespace Poke
         void CreateLogicalDevice();
         void CreateDescriptorPool();
         void CreateSynchronizationObjects();
-        void DestroySynchronizationObjects();
 
         // Swapchain helpers
         void CreateSwapchain();
