@@ -2,6 +2,7 @@
 #define GPU_ENUMS_H
 
 #include <cstdint>
+#include <vulkan/vulkan.h>
 
 namespace Poke
 {
@@ -35,17 +36,6 @@ namespace Poke
 
         enum Mask {
             WireframeMask = 1 << 0, SolidMask = 1 << 1, PointMask = 1 << 2, CountMask = 1 << 3
-        };
-    }
-
-    namespace FrontClockWise
-    {
-        enum Enum {
-            True, False, Count
-        };
-
-        enum Mask {
-            TrueMask = 1 << 0, FalseMask = 1 << 1, CountMask = 1 << 2
         };
     }
 

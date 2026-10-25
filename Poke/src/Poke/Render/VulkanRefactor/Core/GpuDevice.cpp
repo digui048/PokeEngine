@@ -5,6 +5,7 @@
 #include "../Command/CommandBufferRing.h"
 
 #include <SDL3/SDL_vulkan.h>
+#include <cstring>
 
 using namespace Poke;
 
@@ -26,7 +27,7 @@ static size_t s_ssboAlignment = 256;
 static bool IsValidationsEnabled()
 {
 #ifdef NDEBUG
-    return false
+    return false;
 #else
     return true;
 #endif
@@ -84,8 +85,9 @@ void GpuDevice::CreateInstance(const DeviceCreation &creation)
 {
     VkResult result;
     VkApplicationInfo applicationInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, "Poke Graphics Device", 1, "PokeEngine", 1, VK_MAKE_VERSION(1, 2, 0)};
-    VkInstanceCreateInfo createInfo = IsValidationsEnabled() ? createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions}
-                                                             : createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
+    VkInstanceCreateInfo createInfo;
+    if(IsValidationsEnabled()) createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, sizeof(s_requestedLayers) / sizeof((s_requestedLayers)[0]), s_requestedLayers, sizeof(s_requestedExtensions) / sizeof((s_requestedExtensions)[0]), s_requestedExtensions};
+    else createInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0, &applicationInfo, 0, nullptr, 0, nullptr};
     // Create debug validation layers
     const VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = createDebugUtilsMessengerInfo();
     createInfo.pNext = &debugCreateInfo;
@@ -349,7 +351,7 @@ void GpuDevice::Init(const DeviceCreation &creation)
     m_fullscreenVertexBuffer = CreateBuffer(bufferCreation);
 
     // Create depth image
-    TextureCreation depthTextureCreation = {nullptr, m_swapchainWidth, m_swapchainHeight, 1, 1, 0, VK_FORMAT_D32_SFLOAT, TextureType::Texture2D, "DepthTexture"};
+    TextureCreation depthTextureCreation = {nullptr, static_cast<uint16_t>(m_swapchainWidth), static_cast<uint16_t>(m_swapchainHeight), 1, 1, 0, VK_FORMAT_D32_SFLOAT, TextureType::Texture2D, "DepthTexture"};
     m_depthTexture = CreateTexture(depthTextureCreation);
 
     // Cache depth texture format
@@ -370,9 +372,9 @@ void GpuDevice::Init(const DeviceCreation &creation)
 
     // Create dynamic buffer
     m_dynamicPerFrameSize = 1024 * 1024 * 10;
-    BufferCreation bufferCreation;
-    bufferCreation.Set(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, m_dynamicPerFrameSize * 3).SetName("DynamicBuffer");
-    m_dynamicBuffer = CreateBuffer(bufferCreation);
+    BufferCreation dynamicBufferCreation;
+    dynamicBufferCreation.Set(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, ResourceUsageType::Immutable, m_dynamicPerFrameSize * 3).SetName("DynamicBuffer");
+    m_dynamicBuffer = CreateBuffer(dynamicBufferCreation);
 
     MapBufferParameters constantBufferMap = {m_dynamicBuffer, 0, 0};
     m_dynamicMappedMemory = static_cast<uint8_t *>(MapBuffer(constantBufferMap));
@@ -768,6 +770,23 @@ PipelineHandle GpuDevice::CreatePipeline(const PipelineCreation &creation)
     pipeline->pipelineLayout = pipelineLayout;
     pipeline->numActiveLayouts = creation.activeLayoutsCount;
 
-    // create pipeline
-    // ---------------
+    if (shaderStateData->isGraphicsPipeline)
+    {
+        VkGraphicsPipelineCreateInfo pipelineInfo = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+        pipelineInfo.pStages = shaderStateData->stageInfos;
+        pipelineInfo.stageCount = shaderStateData->activeShaders;
+        pipelineInfo.layout = pipelineLayout;
+
+        VkPipelineVertexInputStateCreateFlags vertexInputState = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+        VkVertexInputAttributeDescription vertexAttributes[8];
+        if (creation.vertexInput.attributeCount)
+        {
+            for (uint32_t i = 0; i < creation.vertexInput.attributeCount; ++i)
+            {
+                const VertexAttribute &vertexAttribute = creation.vertexInput.attributes[i];
+            }
+        }
+    }
+
+    return handle;
 }
