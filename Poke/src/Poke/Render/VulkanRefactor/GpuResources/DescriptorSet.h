@@ -6,6 +6,7 @@
 
 #include <vulkan/vulkan.h>
 #include <cstdint>
+#include <vector>
 
 namespace Poke
 {
@@ -40,8 +41,9 @@ namespace Poke
     {
         VkDescriptorSetLayout layout;
 
-        VkDescriptorSetLayoutBinding *binding = nullptr;
-        DescriptorBinding *bindings = nullptr;
+        std::vector<VkDescriptorSetLayoutBinding> vkBindings;
+        std::vector<DescriptorBinding> bindings;
+        
         uint16_t numBindings = 0;
         uint16_t setIndex = 0;
 
@@ -52,9 +54,9 @@ namespace Poke
     {
         VkDescriptorSet set;
 
-        ResourceHandle *resources = nullptr;
-        SamplerHandle *samplers = nullptr;
-        uint16_t *bindings = nullptr;
+        std::vector<ResourceHandle> resources;
+        std::vector<SamplerHandle> samplers;
+        std::vector<uint16_t> bindings;
 
         const DescriptorSetLayout *layout = nullptr;
         uint32_t resourceCount = 0;

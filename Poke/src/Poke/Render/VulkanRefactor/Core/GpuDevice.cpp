@@ -973,6 +973,212 @@ SamplerHandle GpuDevice::CreateSampler(const SamplerCreation &creation)
 
     vkCreateSampler(m_vulkanDevice, &createInfo, m_vulkanAllocationCallbacks, &sampler->sampler);
     SetResourceName(VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler->sampler), creation.name);
-    
+
     return handle;
+}
+
+DescriptorSetLayoutHandle GpuDevice::CreateDescriptorSetLayout(const DescriptorSetLayoutCreation &creation)
+{
+    DescriptorSetLayoutHandle handle = {m_descriptorSetLayouts.ObtainResource()};
+    if (handle.index == k_invalidIndex)
+        return handle;
+
+    DescriptorSetLayout *descriptorSetLayout = AccessDescriptorSetLayout(handle);
+
+    descriptorSetLayout->numBindings = static_cast<uint16_t>(creation.bindingCount);
+    descriptorSetLayout->bindings.resize(creation.bindingCount);
+    descriptorSetLayout->vkBindings.resize(creation.bindingCount);
+    descriptorSetLayout->handle = handle;
+    descriptorSetLayout->setIndex = static_cast<uint16_t>(creation.setIndex);
+
+    uint32_t usedBindings = 0;
+    for (uint32_t i = 0; i < creation.bindingCount; ++i)
+    {
+        DescriptorBinding &binding = descriptorSetLayout->bindings[i];
+        const DescriptorSetLayoutCreation::Binding &inputBinding = creation.bindings[i];
+        binding.start = inputBinding.start == UINT16_MAX ? static_cast<uint16_t>(i) : inputBinding.start;
+        binding.count = 1;
+        binding.type = inputBinding.type;
+        binding.name = inputBinding.name;
+
+        VkDescriptorSetLayoutBinding &vkBinding = descriptorSetLayout->vkBindings[usedBindings];
+        ++usedBindings;
+
+        vkBinding.binding = binding.start;
+        vkBinding.descriptorType = inputBinding.type;
+        vkBinding.descriptorType = vkBinding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : vkBinding.descriptorType;
+        vkBinding.descriptorCount = 1;
+        vkBinding.stageFlags = VK_SHADER_STAGE_ALL;
+        vkBinding.pImmutableSamplers = nullptr;
+    }
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    layoutInfo.bindingCount = usedBindings;
+    layoutInfo.pBindings = descriptorSetLayout->vkBindings.data();
+
+    vkCreateDescriptorSetLayout(m_vulkanDevice, &layoutInfo, m_vulkanAllocationCallbacks, &descriptorSetLayout->layout);
+
+    return handle;
+}
+
+DescriptorSetHandle GpuDevice::CreateDescriptorSet(const DescriptorSetCreation &creation)
+{
+    DescriptorSetHandle handle = {m_descriptorSets.ObtainResource()};
+    if (handle.index == k_invalidIndex)
+        return handle;
+
+    DescriptorSet *descriptorSet = AccessDescriptorSet(handle);
+    const DescriptorSetLayout *descriptorSetLayout = AccessDescriptorSetLayout(creation.layout);
+
+    VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    allocInfo.descriptorPool = m_vulkanDescriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &descriptorSetLayout->layout;
+
+    VkResult result = vkAllocateDescriptorSets(m_vulkanDevice, &allocInfo, &descriptorSet->set);
+    POKE_ASSERT(result == VK_SUCCESS, "Failed to allocate a descriptor set");
+
+    descriptorSet->resources.resize(creation.resourceCount);
+    descriptorSet->samplers.resize(sizeof(creation.samplers) / (sizeof((creation.samplers)[0])));
+    descriptorSet->bindings.resize(sizeof(creation.bindings) / (sizeof((creation.bindings)[0])));
+    descriptorSet->resourceCount = creation.resourceCount;
+    descriptorSet->layout = descriptorSetLayout;
+
+    VkWriteDescriptorSet descriptorWrite[8];
+    VkDescriptorBufferInfo bufferInfo[8];
+    VkDescriptorImageInfo imageInfo[8];
+
+    Sampler *defaultSampler = AccessSampler(m_defaultSampler);
+
+    uint32_t numResources = creation.resourceCount;
+    uint32_t usedResources = 0;
+    for (uint32_t i = 0; i < numResources; ++i)
+    {
+        uint32_t layoutBindingIndex = creation.bindings[i];
+        const DescriptorBinding &binding = descriptorSetLayout->bindings[layoutBindingIndex];
+        uint32_t j = usedResources;
+        ++usedResources;
+
+        descriptorWrite[j] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descriptorWrite[j].dstSet = descriptorSet->set;
+        const uint32_t bindingPoint = binding.start;
+        descriptorWrite[j].dstBinding = bindingPoint;
+        descriptorWrite[j].dstArrayElement = 0;
+        descriptorWrite[j].descriptorCount = 1;
+
+        switch (binding.type)
+        {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+        {
+            descriptorWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+            TextureHandle textureHandle = {creation.resources[j]};
+            Texture *textureData = AccessTexture(textureHandle);
+
+            imageInfo[j].sampler = defaultSampler->sampler;
+            if (textureData->sampler)
+                imageInfo[j].sampler = textureData->sampler->sampler;
+
+            if (creation.samplers[i].index != k_invalidIndex)
+            {
+                Sampler *sampler = AccessSampler({creation.samplers[i]});
+                imageInfo[j].sampler = sampler->sampler;
+            }
+
+            imageInfo[j].imageLayout = TextureFormat::HasDepthOrStencil(textureData->format) ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo[j].imageView = textureData->view;
+
+            descriptorWrite[j].pImageInfo = &imageInfo[j];
+
+            break;
+        }
+
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+        {
+            descriptorWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+            TextureHandle textureHandle = {creation.resources[j]};
+            Texture *textureData = AccessTexture(textureHandle);
+
+            imageInfo[j].sampler = nullptr;
+            imageInfo[j].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo[j].imageView = textureData->view;
+
+            descriptorWrite[j].pImageInfo = &imageInfo[j];
+
+            break;
+        }
+
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+        {
+            BufferHandle bufferHandle = {creation.resources[i]};
+            Buffer *buffer = AccessBuffer(bufferHandle);
+
+            descriptorWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrite[j].descriptorType = buffer->usage == ResourceUsageType::Dynamic ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+            if (buffer->parentHandle.index != k_invalidIndex)
+            {
+                Buffer *parenteBuffer = AccessBuffer(buffer->parentHandle);
+                bufferInfo[j].buffer = parenteBuffer->buffer;
+            }
+            else
+                bufferInfo[j].buffer = buffer->buffer;
+
+            bufferInfo[j].offset = 0;
+            bufferInfo[j].range = buffer->size;
+
+            descriptorWrite[j].pBufferInfo = &bufferInfo[j];
+
+            break;
+        }
+
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+        {
+            BufferHandle bufferHandle = {creation.resources[i]};
+            Buffer *buffer = AccessBuffer(bufferHandle);
+
+            descriptorWrite[j].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+            if (buffer->parentHandle.index != k_invalidIndex)
+            {
+                Buffer *parenteBuffer = AccessBuffer(buffer->parentHandle);
+                bufferInfo[j].buffer = parenteBuffer->buffer;
+            }
+            else
+                bufferInfo[j].buffer = buffer->buffer;
+
+            bufferInfo[j].offset = 0;
+            bufferInfo[j].range = buffer->size;
+
+            descriptorWrite[j].pBufferInfo = &bufferInfo[j];
+
+            break;
+        }
+
+        default:
+        {
+            POKE_ASSERT(false, "Resource type {0} not supported in descriptor set creation", static_cast<uint32_t>(binding.type));
+            break;
+        }
+        }
+    }
+
+    numResources = usedResources;
+
+    for (uint32_t i = 0; i < creation.resourceCount; ++i)
+    {
+        descriptorSet->resources[i] = creation.resources[i];
+        descriptorSet->samplers[i] = creation.samplers[i];
+        descriptorSet->bindings[i] = creation.bindings[i];
+    }
+
+    vkUpdateDescriptorSets(m_vulkanDevice, numResources, descriptorWrite, 0, nullptr);
+
+    return handle;
+}
+
+ShaderStateHandle GpuDevice::CreateShaderState(const ShaderStateCreation &creation)
+{
+    return ShaderStateHandle();
 }
